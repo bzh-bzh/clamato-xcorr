@@ -1,0 +1,3 @@
+1. Run `svn export https://svn.sdss.org/public/repo/sdss/idlutils/tags/v5_5_32 idlutils-v5_5_32`.
+2. Source the `run-mfpca.sh` script to set up the env variables.
+3. Run `evilmake all`.

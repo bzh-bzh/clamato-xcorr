@@ -1,0 +1,18 @@
+Test suite parse_string format.
+
+Running (in shell): 
+
+ ./test_parse_string_format.py
+ 
+and (in IDL):
+
+ test_parse_string_format
+
+should produce the files:
+ 
+ test-idl.txt
+ test-python.txt
+
+They should be identifical.
+
+MRB, NYU, 2015-06-02

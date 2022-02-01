@@ -1,0 +1,112 @@
+;+
+; NAME:
+;   mfreg
+;
+;
+; PURPOSE:
+;   For an input Lyman-alpha forest spectrum and initial continuum
+;   guess, carry out mean-flux regulation with a linear correction
+;   function (see BOSS DR9 LyaF data release paper by Lee et al 2012).
+;
+;   The forest variance is given by FORESTVAR_FUNC and mean-flux is
+;   given by TAUEFF_EVO.  
+;  
+;   Returns corrected continuum.
+;
+; CATEGORY:
+;   Function. 
+;
+; CALLING SEQUENCE:
+;   cont_out = mfreg(wave, flux, cont, zqso=zqso1, ivar=ivar_noise,
+;         [lyaf_range=lyaf_range, wavemin=wavemin1, delta_mf=delta_mf])
+;
+; INPUTS:
+;   wave         - *Observed* wavelength scale
+;   flux         - Observed flux, including Lya forest segment to be
+;                  fitted 
+;   cont         - Initial continuum, to be used for mean-flux
+;                  regulation 
+;   zqso         - Quasar redshift
+;   ivar         - Noise inverse variance corresponding to input flux 
+;
+; OPTIONAL INPUTS:
+;   lyaf_range   - 2-element vector with restframe wavelength range to
+;                  be considered for the Lyman-alpha forest, in
+;                  angstroms. Defaults to [1041, 1185].
+;
+; OUTPUTS:
+;    Mean-flux regulated version of input continuum. The entire
+;    continuum bluewards of 1185A (or specific max LyaF wavelength)
+;    will be corrected.   
+;
+;
+; OPTIONAL OUTPUTS:
+;    delta_mf    - 2-element vector corresponding to the best-fit
+;                  parameters used to correct the continuum.
+;
+;
+; COMMON BLOCKS:
+;    MFBLOCK
+;
+;
+; ROUTINES USED:
+;    
+;
+;
+; MODIFICATION HISTORY:
+;     K.G Lee  18/09/2012  - Copied from BOSS_MCMC_COADD routine and
+;                            packaged into separate function. 
+;-
+function mfreg, wave, flux, cont, zqso=zqso1, ivar=ivar_noise, $
+                lyaf_range=lyaf_range, wavemin=wavemin1, delta_mf=delta_mf
+
+
+common mfblock, zqso, mfflag, wavemin
+
+if keyword_set(wavemin1) then wavemin=wavemin1
+if not keyword_set(wavemin) then wavemin = 3625.
+
+zqso = zqso1
+
+if keyword_set(lyaf_range) then begin
+   lyaf_min = (lyaf_range[0])[0]
+   lyaf_max = (lyaf_range[1])[0]
+endif else begin
+   lyaf_min = 1041.
+   lyaf_max = 1185.
+endelse 
+   
+  
+forestpix = where(wave GE lyaf_min*(1.+zqso) AND wave LT lyaf_max*(1.+zqso))
+
+z_for     = wave[forestpix]/1216. - 1. 
+fforest = flux[forestpix] *(cont[forestpix] GT 0) / $
+          (cont[forestpix] + (cont[forestpix] EQ 0))
+ivarforest = ivar_noise[forestpix] * cont[forestpix]^2
+
+;; Estimate weights for each pixel
+var_F = forestvar_func(z_for) * (exp(-taueff_evo(z_for)))^2
+var_noise = (ivarforest NE 0) / (ivarforest + (ivarforest EQ 0))
+var_total = var_F + var_noise
+weights_forest = (var_total NE 0) / (var_total + (var_total EQ 0))
+;; But need to make sure that masked pixels remain masked...
+maskedpix = where(ivarforest EQ 0)
+if maskedpix NE [-1] then weights_forest[maskedpix] = 0
+
+pi = replicate({fixed:0, limited:[0,0], limits:[0.D,0.D]},2)
+delta_mf = [0.,0.]
+
+delta_mf = mpfitfun('MFLUX_TAUEVO_FUNC', wave[forestpix]/(1.+zqso), $
+                    fforest, replicate(0., n_elements(z_for)), $
+                    delta_mf, bestnorm=chisq, $
+                    weights=weights_forest,dof=dof,/quiet, $
+                    parinfo=pi)
+
+bluepix = where(wave LE lyaf_max*(1.+zqso))
+
+cont_out = cont
+cont_out[bluepix] = cont[bluepix] * $
+                mfluxcorr(wave[bluepix]/(1.+zqso),delta_mf)
+
+return, cont_out
+end

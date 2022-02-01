@@ -1,0 +1,74 @@
+ABC{aa_string}XYZ
+ABC{aa_string:>5.3}XYZ
+ABC{aa_string:<5.3}XYZ
+ABC{aa_string:<50}XYZ
+ABC{aa_string:>50}XYZ
+ABC{bb_string}XYZ
+ABC{bb_string:>5.3}XYZ
+ABC{bb_string:<5.3}XYZ
+ABC{bb_string:<50}XYZ
+ABC{bb_string:>50}XYZ
+ABC{aa_int}XYZ
+ABC{bb_int}XYZ
+ABC{cc_int}XYZ
+ABC{dd_int}XYZ
+ABC{aa_int:<5}XYZ
+ABC{bb_int:<5}XYZ
+ABC{cc_int:<5}XYZ
+ABC{dd_int:<5}XYZ
+ABC{aa_int:>5}XYZ
+ABC{bb_int:>5}XYZ
+ABC{cc_int:>5}XYZ
+ABC{dd_int:>5}XYZ
+ABC{aa_int:0>5}XYZ
+ABC{bb_int:0>5}XYZ
+ABC{cc_int:0>5}XYZ
+ABC{dd_int:0>5}XYZ
+ABC{aa_int:0<5}XYZ
+ABC{bb_int:0<5}XYZ
+ABC{cc_int:0<5}XYZ
+ABC{dd_int:0<5}XYZ
+ABC{aa_int:0=5}XYZ
+ABC{bb_int:0=5}XYZ
+ABC{cc_int:0=5}XYZ
+ABC{dd_int:0=5}XYZ
+ABC{aa_int:=05}XYZ
+ABC{bb_int:=05}XYZ
+ABC{cc_int:=05}XYZ
+ABC{dd_int:=05}XYZ
+ABC{aa_int:=+05}XYZ
+ABC{bb_int:=+05}XYZ
+ABC{cc_int:=+05}XYZ
+ABC{dd_int:=+05}XYZ
+ABC{aa_int:= 05}XYZ
+ABC{bb_int:= 05}XYZ
+ABC{cc_int:= 05}XYZ
+ABC{dd_int:= 05}XYZ
+ABC{aa_int:> 05}XYZ
+ABC{bb_int:> 05}XYZ
+ABC{cc_int:> 05}XYZ
+ABC{dd_int:> 05}XYZ
+ABC{aa_int:< 05}XYZ
+ABC{bb_int:< 05}XYZ
+ABC{cc_int:< 05}XYZ
+ABC{dd_int:< 05}XYZ
+ABC{aa_float:5.3f}XYZ
+ABC{bb_float:5.3f}XYZ
+ABC{cc_float:5.3f}XYZ
+ABC{dd_float:5.3f}XYZ
+ABC{aa_float:0>5.3f}XYZ
+ABC{bb_float:0>5.3f}XYZ
+ABC{cc_float:0>5.3f}XYZ
+ABC{dd_float:0>5.3f}XYZ
+ABC{aa_float:=5.3f}XYZ
+ABC{bb_float:=5.3f}XYZ
+ABC{cc_float:=5.3f}XYZ
+ABC{dd_float:=5.3f}XYZ
+ABC{aa_float:=5f}XYZ
+ABC{bb_float:=5f}XYZ
+ABC{cc_float:=5f}XYZ
+ABC{dd_float:=5f}XYZ
+ABC{aa_float:=5.0f}XYZ
+ABC{bb_float:=5.0f}XYZ
+ABC{cc_float:=5.0f}XYZ
+ABC{dd_float:=5.0f}XYZ
