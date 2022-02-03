@@ -28,11 +28,11 @@ insp_fil =  datadir+'cl2020_valueadded_release_20200602.txt'
 ;cat = mrdfits(cat_fil, 1, /silent)
 
 readcol, insp_fil, specfil, catnum, mag, zconf, zsp, qso, ra, dec, $
-         snrlya1, snrlya2, snrlya3, snrlya_red, tomo, exptime, f='a, l, d, d, d, d, d,d,d,d,d,d,d,d', /silent
+         snrlya1, snrlya2, snrlya3, snr_red, tomo, exptime, f='a, l, d, d, d, d, d,d,d,d,d,d,d,d', /silent
 
 qualcut = where((snrlya1 GE 1.0 OR snrlya2 GE 1.0 OR snrlya3 GE 1.0) $
-                AND zconf GE 3. $
-                AND tomo EQ 1.0, $ ;; TODO: verify
+                AND zconf GE 3., $
+                ;; AND tomo EQ 1.0, $
                 nsel, complement=failcut) 
 
 remove, failcut, specfil, catnum, zsp, zconf, qso, snrlya1,snrlya2, tomo, ra, dec, mag
