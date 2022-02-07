@@ -7,7 +7,7 @@ from astropy.cosmology import FlatLambdaCDM
 cosmo_default = FlatLambdaCDM(H0=70,Om0=0.31)
 
 class lyapix:   
-    def __init__(self, path, cosmo=cosmo_default):
+    def __init__(self, path, rng=None, cosmo=cosmo_default):
         """
         This class represents Ly-a forest pixel positions, delta_F, and noise of Ly-a forest pixels 
         from 2016 CLAMATO data.
@@ -44,6 +44,11 @@ class lyapix:
         
         self.coord = SkyCoord(ra = self.ra*u.degree, dec=self.dec*u.degree,
                               distance=self.comdist)
+        
+        if rng is None:
+            self.rng = np.random.default_rng()
+        else:
+            self.rng = rng
     def var_forest(z_in):
         """ Return intrinsic Lya-forest variance as function of redshift"""
         return 0.065 * ( (1.+z_in)/3.25 )**3.8
@@ -57,7 +62,7 @@ class lyapix:
         Also creates a new attribute called ind_vec, which is the 
         sequence of indices used to create the current resample.
         """
-        ind_vec = np.random.choice(self.npix, self.npix, replace=True)
+        ind_vec = self.rng.choice(self.npix, self.npix, replace=True)
 
         ratmp = self.ra
         dectmp = self.dec
@@ -104,7 +109,7 @@ class lyapix:
         n_skewer = len(SkewerPos)
         
         # Resample the skewers with replacement. This returns skewer indices
-        rand_skewer = np.random.choice(n_skewer, n_skewer, replace=True)
+        rand_skewer = self.rng.choice(n_skewer, n_skewer, replace=True)
 
         # Convert the skewer masks into an array
         SkewerMask_rand = SkewerMask[rand_skewer,:]
@@ -259,7 +264,7 @@ def weight_stack(GalCoord, PixCoord, WeightsIn, SigEdges, PiEdges,
 
     PixCoordTmp = PixCoord[get_near]
     LosSep = LosSep[get_near]
-    Weights = WeightsIn[get_near]
+    Weights = [w[get_near] for w in WeightsIn]
     n_near = len(PixCoordTmp)
     #zMeanTmp = zMeanTmp[get_near]
     ComDistMean = (PixCoordTmp.distance + np.repeat(GalCoord.distance,n_near))/ \
@@ -271,11 +276,9 @@ def weight_stack(GalCoord, PixCoord, WeightsIn, SigEdges, PiEdges,
     # Convert edges into Mpc.
     SigEdges *= u.Mpc
     PiEdges *= u.Mpc
-    
-    WHist2D, xedges, yedges = np.histogram2d(TransSep, LosSep, weights=Weights,
-                                            bins=[SigEdges, PiEdges])
-    
-    return WHist2D
+        
+    return [np.histogram2d(TransSep, LosSep, weights=w,
+                                            bins=[SigEdges, PiEdges])[0] for w in Weights]
 
 def xcorr_gal_lya(GalCoord, LyaPix, SigEdges, PiEdges, cosmo=cosmo_default,verbose=1):
     """ 
@@ -308,9 +311,7 @@ def xcorr_gal_lya(GalCoord, LyaPix, SigEdges, PiEdges, cosmo=cosmo_default,verbo
     NoNearPix = []
     for itmp in range(len(GalCoord)):
         CoordTmpHere = CoordTmp[itmp]
-        NumerTmp = weight_stack(CoordTmpHere, LyaPix.coord, LyaPix.delta*LyaPix.w, 
-                                      SigEdges, PiEdges, cosmo=cosmo)
-        DenomTmp = weight_stack(CoordTmpHere, LyaPix.coord, LyaPix.w,
+        NumerTmp, DenomTmp = weight_stack(CoordTmpHere, LyaPix.coord, [LyaPix.delta*LyaPix.w, LyaPix.w], 
                                       SigEdges, PiEdges, cosmo=cosmo)
         NumerArr += NumerTmp
         DenomArr += DenomTmp
