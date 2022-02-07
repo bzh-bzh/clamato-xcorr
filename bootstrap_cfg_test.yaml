@@ -1,0 +1,11 @@
+pixel_file: '/global/homes/b/bzh/clamato-xcorr/data/clamato_dr2/pixel_radecz_cl2020_v0.bin'
+galaxy_file: '/global/homes/b/bzh/clamato-xcorr/data/coeval/cat_galxcorr_cl2020_nonuniq_v0.dat'
+# Survey to cross-correlate
+survey: 'MOSDEF' 
+los_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins23_pi_0-30hMpc.txt'
+trans_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins10_sigma_0-30hMpc.txt'
+n_bootstrap: 100
+# Set this to 'null' to use no seed.
+rng_seed: 4675363 
+output_file_dir_base: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bootstrap'
+output_file_suffix: 'mosdef_n100_testserial'

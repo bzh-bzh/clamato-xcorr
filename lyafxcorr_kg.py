@@ -59,6 +59,7 @@ class lyapix:
         """
         ind_vec = np.random.choice(self.npix, self.npix, replace=True)
 
+        ratmp = self.ra
         dectmp = self.dec
         ztmp = self.z
         sigtmp = self.sig
@@ -67,7 +68,7 @@ class lyapix:
         comdisttmp = self.comdist
         coordtmp = self.coord
         
-        self.ra = self.ra[ind_vec]
+        self.ra = ratmp[ind_vec]
         self.dec = dectmp[ind_vec]
         self.z   = ztmp[ind_vec]
         self.sig = sigtmp[ind_vec]
@@ -301,15 +302,11 @@ def xcorr_gal_lya(GalCoord, LyaPix, SigEdges, PiEdges, cosmo=cosmo_default,verbo
     CoordTmp = GalCoord
     
     t0= time.time()
-    NumerArr = weight_stack(CoordTmp[itmp], LyaPix.coord, LyaPix.delta*LyaPix.w, SigEdges, 
-                                  PiEdges, cosmo=cosmo)
-    DenomArr = weight_stack(CoordTmp[itmp], LyaPix.coord, LyaPix.w, SigEdges, 
-                                  PiEdges, cosmo=cosmo)
-    if verbose == 1:
-        print('2D histogram evaluation took %f seconds for first galaxy' % (time.time()-t0))
+    NumerArr = 0
+    DenomArr = 0
 
     NoNearPix = []
-    for itmp in range(1,len(GalCoord)):
+    for itmp in range(len(GalCoord)):
         CoordTmpHere = CoordTmp[itmp]
         NumerTmp = weight_stack(CoordTmpHere, LyaPix.coord, LyaPix.delta*LyaPix.w, 
                                       SigEdges, PiEdges, cosmo=cosmo)
@@ -318,7 +315,7 @@ def xcorr_gal_lya(GalCoord, LyaPix, SigEdges, PiEdges, cosmo=cosmo_default,verbo
         NumerArr += NumerTmp
         DenomArr += DenomTmp
         if np.isclose(np.sum(DenomTmp),0., atol=1.e-6): 
-                NoNearPix=NoNearPix.append(itmp)
+            NoNearPix=NoNearPix.append(itmp)
         
     if verbose == 1:
         print("Finished evaluating cross-correlations. This took %f seconds"
