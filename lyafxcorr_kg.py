@@ -205,9 +205,9 @@ def countpix(GalCoord, PixCoord,  SigEdges, PiEdges,
 
     # Discard pixels that are greater in LOS distance than the desired
     # boundaries. This is a quick cut to ease histogram evaluation
-    PiBound = (min(PiEdges), max(PiEdges))
-    get_near = np.all(np.column_stack([(LosSep >= PiBound[0]*u.Mpc),
-                                      (LosSep <= PiBound[1]*u.Mpc)]),
+    PiBound = (min(PiEdges) << u.Mpc, max(PiEdges) << u.Mpc)
+    get_near = np.all(np.column_stack([(LosSep >= PiBound[0]),
+                                      (LosSep <= PiBound[1])]),
                      axis=1)
 
     PixCoordTmp = PixCoord[get_near]
@@ -221,8 +221,8 @@ def countpix(GalCoord, PixCoord,  SigEdges, PiEdges,
     TransSep = AngleSep.radian * ComDistMean
 
     # Convert edges into Mpc.
-    SigEdges *= u.Mpc
-    PiEdges *= u.Mpc
+    SigEdges = SigEdges << u.Mpc
+    PiEdges = PiEdges << u.Mpc
     
     Hist2D, xedges, yedges = np.histogram2d(TransSep, LosSep,
                                             bins=[SigEdges, PiEdges])
@@ -257,9 +257,9 @@ def weight_stack(GalCoord, PixCoord, WeightsIn, SigEdges, PiEdges,
 
     # Discard pixels that are greater in LOS distance than the desired
     # boundaries. This is a quick cut to ease histogram evaluation
-    PiBound = (min(PiEdges), max(PiEdges))
-    get_near = np.all(np.column_stack([(LosSep >= PiBound[0]*u.Mpc),
-                                      (LosSep <= PiBound[1]*u.Mpc)]),
+    PiBound = (min(PiEdges) << u.Mpc, max(PiEdges) << u.Mpc)
+    get_near = np.all(np.column_stack([(LosSep >= PiBound[0]),
+                                      (LosSep <= PiBound[1])]),
                      axis=1)
 
     PixCoordTmp = PixCoord[get_near]
@@ -274,8 +274,8 @@ def weight_stack(GalCoord, PixCoord, WeightsIn, SigEdges, PiEdges,
     TransSep = AngleSep.radian * ComDistMean
 
     # Convert edges into Mpc.
-    SigEdges *= u.Mpc
-    PiEdges *= u.Mpc
+    SigEdges = SigEdges << u.Mpc
+    PiEdges = PiEdges << u.Mpc
         
     return [np.histogram2d(TransSep, LosSep, weights=w,
                                             bins=[SigEdges, PiEdges])[0] for w in Weights]
