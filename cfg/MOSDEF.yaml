@@ -1,0 +1,14 @@
+pixel_file: '/global/homes/b/bzh/clamato-xcorr/data/clamato_dr2/pixel_radecz_cl2020_v0.bin'
+galaxy_file: '/global/homes/b/bzh/clamato-xcorr/data/coeval/cat_galxcorr_cl2020_nonuniq_v0.dat'
+# Survey to cross-correlate
+survey: 'MOSDEF' 
+los_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins23_pi_0-30hMpc.txt'
+trans_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins10_sigma_0-30hMpc.txt'
+n_bootstrap: 7200
+# Set this to 'null' to use no seed.
+# Has to be long, as it's used in a seed sequence 
+rng_seed: 225639689182001257728712319951377476776
+# Set to -1 to use maximum number of CPUs.
+n_processes: -1
+output_file_dir_base: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bootstrap'
+output_file_suffix: 'v0'
