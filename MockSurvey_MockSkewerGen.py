@@ -13,7 +13,8 @@ OUTPUT_PATH_BASE = os.path.join(constants.XCORR_DIR_BASE, 'mock', 'skewers')
 
 SIM_Z = 0.28850**-1 - 1
 SNR_MIN, SNR_MAX = 1.4, 10
-SIGHTLINE_SEP_MPC = 2.4
+# In covariance generation, skewers+gals get subsampled for each subsurvey, so this is >CLAMATO density.
+SIGHTLINE_SEP_MPC = 1.0
 
 if __name__ == '__main__':
     np.random.seed(352598789)
