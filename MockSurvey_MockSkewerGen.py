@@ -8,7 +8,7 @@ os.chdir('/global/homes/b/bzh/tardis-tf/tardis')
 sys.path.insert(0,'/global/homes/b/bzh/tardis-tf/tardis')
 from tardis import *
 
-INPUT_RSD_DENS_PATH = '/global/homes/b/bzh/projectdir/bzh/BolshoiP/z2.5/BolshoiP_rsd_cic_n512_0094.npy'
+INPUT_RSD_DENS_PATH = '/global/homes/b/bzh/projectdir/bzh/BolshoiP/z2.5/BolshoiP_rsd_cic_n298_0094.npy'
 OUTPUT_PATH_BASE = os.path.join(constants.XCORR_DIR_BASE, 'mock', 'skewers')
 
 SIM_Z = 0.28850**-1 - 1
