@@ -2,7 +2,7 @@
 Calculate Ly-alpha/galaxy cross-correlation for an ensemble of abs x galaxy realizations generated 
 in May 2019. 
 
-The input start and end indices refer to subvolumes of the TreePM box, ranging from 1 to 80 
+The input start and end indices refer to subvolumes of the TreePM box, ranging from 1 to 63 
 inclusive. In each subvolume, we loop over 3x absorption realizations and 10x galaxy realizations.
 
 
@@ -10,8 +10,10 @@ inclusive. In each subvolume, we loop over 3x absorption realizations and 10x ga
 
 import sys
 import numpy as np
+import tqdm
 import time as time
 import os
+import multiprocessing
 import lyafxcorr_kg as xcorr
 import constants
 from astropy.cosmology import FlatLambdaCDM
@@ -21,8 +23,11 @@ from astropy.table import Table
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-istart = np.asarray(sys.argv[1]).astype(np.int32)
-iend = np.asarray(sys.argv[2]).astype(np.int32)
+# istart = np.asarray(sys.argv[1]).astype(np.int32)
+# iend = np.asarray(sys.argv[2]).astype(np.int32)
+N_VOL = 63
+N_ABS = 3
+N_GAL = 10
 
 # Define cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=0.31)
@@ -44,90 +49,87 @@ SigEdges = SigBins0['sigma_edges'].data
 PiEdges  = PiEdges/(len(PiEdges)*[cosmo.h])
 SigEdges = SigEdges/(len(SigEdges)*[cosmo.h])
 
+N_PROC = multiprocessing.cpu_count()
 
-for ivol in np.arange(istart,iend+1):
+def gen_crosscorr(ivol, iabs, igal):
+    # tstart = time.time()
+    abssuffix = '{0:03d}'.format(ivol+iabs*N_VOL)
 
-    for iabs in np.arange(0,3):
+    lyafil = os.path.join(mockdir, 'skewers', 'pixel_radecz_mock_'+abssuffix+'.bin')
+    lyapix = xcorr.lyapix(lyafil,cosmo=cosmo)
 
-        for igal in np.arange(0,10):
+    #print("Read in {0:d} Ly-a forest pixels from mock {1:03d}".format(lyapix.npix, 
+    #                                                                  ivol))
 
-            tstart = time.time()
-            abssuffix = '{0:04d}'.format(ivol+iabs*80)
+    npix = lyapix.npix
 
-            lyafil = os.path.join(mockdir, 'skewers', 'pixel_radecz_mock_'+abssuffix+'.bin')
-            lyapix = xcorr.lyapix(lyafil,cosmo=cosmo)
+    ### Read in galaxies 
+    # We use the catalog created with Create_GalzMocks.IPYNB
+    galsuffix = '{:03d}'.format(ivol+igal*N_VOL)
+    galfil = os.path.join(mockdir, 'gal', 'cat_galmock_nonuniq_'+galsuffix+'.dat')
 
-            #print("Read in {0:d} Ly-a forest pixels from mock {1:03d}".format(lyapix.npix, 
-            #                                                                  ivol))
+    gal = ascii.read(galfil, format='ipac')
+    #print(gal.columns)
 
-            npix = lyapix.npix
+    gal_3d = gal[gal['source'] == '3DHST']
+    gal_zD = gal[gal['source'] == 'zDeep']
+    gal_mosdef = gal[gal['source'] == 'MOSDEF']
+    gal_vuds = gal[gal['source']=='VUDS']
+    gal_clamato=gal[gal['source']=='CLAMATO']
 
-            ### Read in galaxies 
-            # We use the catalog created with Create_GalzMocks.IPYNB
-            galsuffix = '{:03d}'.format(ivol+igal*80)
-            galfil = os.path.join(mockdir, 'gal', 'cat_galmock_nonuniq_'+galsuffix+'.dat')
-
-            gal = ascii.read(galfil, format='ipac')
-            #print(gal.columns)
-
-            gal_3d = gal[gal['source'] == '3DHST']
-            gal_zD = gal[gal['source'] == 'zDeep']
-            gal_mosdef = gal[gal['source'] == 'MOSDEF']
-            gal_vuds = gal[gal['source']=='VUDS']
-            gal_clamato=gal[gal['source']=='CLAMATO']
-
-            #print('Read in %i 3D-HST galaxies, %i zCOSMOS-Deep galaxies, %i MOSDEF galaxies,' 
-            #      '%i VUDS galaxies, %i CLAMATO galaxies' % 
-            #      (len(gal_3d), len(gal_zD), len(gal_mosdef), len(gal_vuds),len(gal_clamato)) )
+    #print('Read in %i 3D-HST galaxies, %i zCOSMOS-Deep galaxies, %i MOSDEF galaxies,' 
+    #      '%i VUDS galaxies, %i CLAMATO galaxies' % 
+    #      (len(gal_3d), len(gal_zD), len(gal_mosdef), len(gal_vuds),len(gal_clamato)) )
 
 #            print("Calculating cross-correlation between galaxy catalog "+galsuffix+" and absorption catalog "+abssuffix)
 
-            # Convert to 3D Sky positions
-            Coord_3d     = SkyCoord(ra=gal_3d['ra']  , dec=gal_3d['dec']  ,
-                                    distance=cosmo.comoving_distance(gal_3d['zspec']))
-            Coord_zD     = SkyCoord(ra=gal_zD['ra']  , dec=gal_zD['dec']  ,
-                                    distance=cosmo.comoving_distance(gal_zD['zspec']))
-            Coord_mosdef = SkyCoord(ra=gal_mosdef['ra']  , dec=gal_mosdef['dec']  ,
-                                    distance=cosmo.comoving_distance(gal_mosdef['zspec']))
-            Coord_vuds   = SkyCoord(ra=gal_vuds['ra']  , dec=gal_vuds['dec']  ,
-                                    distance=cosmo.comoving_distance(gal_vuds['zspec']))
-            Coord_clamato=SkyCoord(ra=gal_clamato['ra'], dec=gal_clamato['dec']  ,
-                                   distance=cosmo.comoving_distance(gal_clamato['zspec']))
-            Coord_all = SkyCoord(ra=gal['ra'], dec=gal['dec']  ,
-                                 distance=cosmo.comoving_distance(gal['zspec']))
+    # Convert to 3D Sky positions
+    Coord_3d     = SkyCoord(ra=gal_3d['ra']  , dec=gal_3d['dec']  ,
+                            distance=cosmo.comoving_distance(gal_3d['zspec']))
+    Coord_zD     = SkyCoord(ra=gal_zD['ra']  , dec=gal_zD['dec']  ,
+                            distance=cosmo.comoving_distance(gal_zD['zspec']))
+    Coord_mosdef = SkyCoord(ra=gal_mosdef['ra']  , dec=gal_mosdef['dec']  ,
+                            distance=cosmo.comoving_distance(gal_mosdef['zspec']))
+    Coord_vuds   = SkyCoord(ra=gal_vuds['ra']  , dec=gal_vuds['dec']  ,
+                            distance=cosmo.comoving_distance(gal_vuds['zspec']))
+    Coord_clamato=SkyCoord(ra=gal_clamato['ra'], dec=gal_clamato['dec']  ,
+                           distance=cosmo.comoving_distance(gal_clamato['zspec']))
+    Coord_all = SkyCoord(ra=gal['ra'], dec=gal['dec']  ,
+                         distance=cosmo.comoving_distance(gal['zspec']))
 
-            # Compute Cross-Correlation For MOSDEF Galaxies
-            XCorr_mosdef, NoXCorr_mosdef = xcorr.xcorr_gal_lya(Coord_mosdef, 
-                                                               lyapix, SigEdges, PiEdges, 
-                                                               cosmo=cosmo, verbose=0)
+    # Compute Cross-Correlation For MOSDEF Galaxies
+    XCorr_mosdef, NoXCorr_mosdef = xcorr.xcorr_gal_lya(Coord_mosdef, 
+                                                       lyapix, SigEdges, PiEdges, 
+                                                       cosmo=cosmo, verbose=0)
 
-            # Compute Cross-Correlation For zCOSMOS-Deep Galaxies
-            XCorr_zD, NoXCorr_zD = xcorr.xcorr_gal_lya(Coord_zD, lyapix, 
-                                                       SigEdges, PiEdges,cosmo=cosmo, verbose=0)
-
-
-            # Compute Cross-Correlation for CLAMATO Galaxies
-            XCorr_clamato, NoXCorr_clamato = xcorr.xcorr_gal_lya(Coord_clamato, lyapix, 
-                                                                 SigEdges, PiEdges,cosmo=cosmo,
-                                                                 verbose=0)
-
-            # Compute Cross-Correlation For 3D-HST Galaxies
-            XCorr_3d, NoXCorr_3d = xcorr.xcorr_gal_lya(Coord_3d, lyapix, 
-                                                       SigEdges, PiEdges, cosmo=cosmo, verbose=0)
+    # Compute Cross-Correlation For zCOSMOS-Deep Galaxies
+    XCorr_zD, NoXCorr_zD = xcorr.xcorr_gal_lya(Coord_zD, lyapix, 
+                                               SigEdges, PiEdges,cosmo=cosmo, verbose=0)
 
 
-            # Compute Cross-Correlations for VUDS galaxies
-            XCorr_vuds, NoXCorr_vuds = xcorr.xcorr_gal_lya(Coord_vuds, lyapix, 
-                                                           SigEdges, PiEdges, cosmo=cosmo, 
-                                                           verbose=0)
-            
-            filesuffix='g'+galsuffix+'_a'+abssuffix
-            np.save(mockdir+"crosscorr/xcorrmock_3dhst_"+filesuffix+f"_{constants.DATA_VERSION}.npy", XCorr_3d)
-            np.save(mockdir+"crosscorr/xcorrmock_zDeep_"+filesuffix+f"_{constants.DATA_VERSION}.npy", XCorr_zD)
-            np.save(mockdir+"crosscorr/xcorrmock_mosdef_"+filesuffix+f"_{constants.DATA_VERSION}.npy", XCorr_mosdef)
-            np.save(mockdir+"crosscorr/xcorrmock_vuds_"+filesuffix+f"_{constants.DATA_VERSION}.npy", XCorr_vuds)
-            np.save(mockdir+"crosscorr/xcorrmock_clamato_"+filesuffix+f"_{constants.DATA_VERSION}.npy", XCorr_vuds)
+    # Compute Cross-Correlation for CLAMATO Galaxies
+    XCorr_clamato, NoXCorr_clamato = xcorr.xcorr_gal_lya(Coord_clamato, lyapix, 
+                                                         SigEdges, PiEdges,cosmo=cosmo,
+                                                         verbose=0)
+
+    # Compute Cross-Correlation For 3D-HST Galaxies
+    XCorr_3d, NoXCorr_3d = xcorr.xcorr_gal_lya(Coord_3d, lyapix, 
+                                               SigEdges, PiEdges, cosmo=cosmo, verbose=0)
 
 
+    # Compute Cross-Correlations for VUDS galaxies
+    XCorr_vuds, NoXCorr_vuds = xcorr.xcorr_gal_lya(Coord_vuds, lyapix, 
+                                                   SigEdges, PiEdges, cosmo=cosmo, 
+                                                   verbose=0)
 
- 
+    filesuffix='g'+galsuffix+'_a'+abssuffix
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_3dhst_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_3d.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_zDeep_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_zD.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_mosdef_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_mosdef.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_vuds_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_vuds.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_clamato_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_vuds.value)
+
+arguments = [(ivol, iabs, igal) for ivol in np.arange(1, N_VOL + 1) for iabs in np.arange(N_ABS) for igal in np.arange(N_GAL)]
+
+with multiprocessing.Pool(N_PROC) as pool:
+    pool.starmap(gen_crosscorr, tqdm.tqdm(arguments))
