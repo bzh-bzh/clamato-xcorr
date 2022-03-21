@@ -23,6 +23,7 @@ from astropy.table import Table
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 import yaml
+import constants
 
 t0 = timeit.default_timer()
 
@@ -43,7 +44,8 @@ nsamp      = input_cfg['n_bootstrap']
 randseed_in= input_cfg['rng_seed']
 nproc      = input_cfg['n_processes']
 outbase    = input_cfg['output_file_dir_base']
-outsuffix  = input_cfg['output_file_suffix']
+# outsuffix  = input_cfg['output_file_suffix']
+outsuffix = constants.DATA_VERSION
 
 if nproc == -1:
     nproc = multiprocessing.cpu_count()
