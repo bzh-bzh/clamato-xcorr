@@ -316,7 +316,7 @@ def xcorr_gal_lya(GalCoord, LyaPix, SigEdges, PiEdges, cosmo=cosmo_default,verbo
         NumerArr += NumerTmp
         DenomArr += DenomTmp
         if np.isclose(np.sum(DenomTmp),0., atol=1.e-6): 
-            NoNearPix=NoNearPix.append(itmp)
+            NoNearPix.append(itmp)
         
     if verbose == 1:
         print("Finished evaluating cross-correlations. This took %f seconds"
