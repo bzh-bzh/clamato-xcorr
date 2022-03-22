@@ -30,8 +30,8 @@ class lyapix:
         self.sig = np.fromfile(pixfile, dtype='f8', count=self.npix)
         self.delta = np.fromfile(pixfile, dtype='f8',count=self.npix)
         
-        print(f'RA limits are {np.min(self.ra)} {np.max(self.ra)}')
-        print(f'Dec limits are {np.min(self.dec)} {np.max(self.dec)}')
+        # print(f'RA limits are {np.min(self.ra)} {np.max(self.ra)}')
+        # print(f'Dec limits are {np.min(self.dec)} {np.max(self.dec)}')
 
         #done reading
         pixfile.close()
