@@ -52,7 +52,6 @@ if nproc == -1:
 
 # Initialize the seed sequence, which is used to generate good (very different PRNG streams) sub-seeds.
 seed_seq = np.random.SeedSequence(entropy=randseed_in)
-seed_list = seed_seq.spawn(nproc)
 
 # Read in forest pixels
 LyaPix = xcorr.lyapix(pixfil,cosmo=cosmo)
@@ -108,6 +107,7 @@ def do_resampling(n_sub_partial, seed):
 n_sub_list = [nsamp // nproc for _ in range(nproc)]
 n_sub_list[-1] += nsamp % nproc
 assert np.sum(n_sub_list) == nsamp
+seed_list = seed_seq.spawn(len(n_sub_list))
 with multiprocessing.Pool(nproc) as pool:
     XCorrSamples = pool.starmap(do_resampling, zip(n_sub_list, seed_list))
 XCorrSamples = np.concatenate(XCorrSamples, axis=-1)

@@ -121,15 +121,21 @@ def gen_crosscorr(ivol, iabs, igal):
     XCorr_vuds, NoXCorr_vuds = xcorr.xcorr_gal_lya(Coord_vuds, lyapix, 
                                                    SigEdges, PiEdges, cosmo=cosmo, 
                                                    verbose=0)
+    
+    #print(ivol, iabs, igal, '|', len(NoXCorr_clamato),
+    #      f'LyA: [{np.min(lyapix.ra)},{np.max(lyapix.ra)}]/[{np.min(lyapix.dec)},{np.max(lyapix.dec)}]',
+    #      f'CLAMATO-gal: [{np.min(Coord_clamato.ra.deg)},{np.max(Coord_clamato.ra.deg)}]/[{np.min(Coord_clamato.dec.deg)},{np.max(Coord_clamato.dec.deg)}]')
 
     filesuffix='g'+galsuffix+'_a'+abssuffix
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_3dhst_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_3d.value)
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_zDeep_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_zD.value)
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_mosdef_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_mosdef.value)
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_vuds_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_vuds.value)
-    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_clamato_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_vuds.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_clamato_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_clamato.value)
+
 
 arguments = [(ivol, iabs, igal) for ivol in np.arange(1, N_VOL + 1) for iabs in np.arange(N_ABS) for igal in np.arange(N_GAL)]
+#arguments = reversed(arguments)
 
 with multiprocessing.Pool(N_PROC) as pool:
     pool.starmap(gen_crosscorr, tqdm.tqdm(arguments))

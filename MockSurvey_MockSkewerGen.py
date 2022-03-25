@@ -45,7 +45,7 @@ if __name__ == '__main__':
     uni.final_tau_RSD = rsd_tau
 
     # Formula from https://physics.stackexchange.com/questions/120093/random-particles-on-a-grid-effect-of-increasing-density-on-distance-between-the
-    spec_smoothing_pix = 1.0 * (uni_arg_dict['nc'] / uni_arg_dict['bs'])
+    spec_smoothing_pix = 1.39 * (uni_arg_dict['nc'] / uni_arg_dict['bs'])
     n_skewers = int(round((4 * uni_arg_dict['bs']**2) / (np.pi * SIGHTLINE_SEP_MPC**2)))
     print(f'# skewers: {n_skewers}')
     mock_clamato = lya_survey(uni, SNR_MIN, SNR_MAX, sm=spec_smoothing_pix, n_skewers=n_skewers, add_ondiag_cont_err=True)
