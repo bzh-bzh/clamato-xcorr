@@ -2,9 +2,9 @@ import numpy as np
 import time as time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.cosmology import FlatLambdaCDM
+import constants
 
-cosmo_default = FlatLambdaCDM(H0=70,Om0=0.31)
+cosmo_default = constants.COSMOLOGY
 
 class lyapix:   
     def __init__(self, path, rng=None, cosmo=cosmo_default):

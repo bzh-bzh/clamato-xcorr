@@ -28,7 +28,7 @@ import constants
 t0 = timeit.default_timer()
 
 # Define cosmology
-cosmo = FlatLambdaCDM(H0=70, Om0=0.31)
+cosmo = constants.COSMOLOGY
 
 assert len(sys.argv) == 2
 # Open config file and parse parameters

@@ -30,7 +30,7 @@ N_ABS = 3
 N_GAL = 10
 
 # Define cosmology
-cosmo = FlatLambdaCDM(H0=70, Om0=0.31)
+cosmo = constants.COSMOLOGY
 
 xcorr_dir = constants.XCORR_DIR_BASE
 mockdir = os.path.join(xcorr_dir, 'mock')
