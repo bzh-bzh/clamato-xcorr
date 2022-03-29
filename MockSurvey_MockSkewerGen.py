@@ -40,7 +40,9 @@ if __name__ == '__main__':
     # Convert RSD overdens in FGPAed tau, and sub into the TARDIS universe.
     rsd_tau = uni_arg_dict['bias_lya'][0] * rsd_dens**uni_arg_dict['bias_lya'][1]
     print(f'Mean tau is {np.mean(rsd_tau)}')
-    print(f'Mean flux is {np.mean(np.exp(-rsd_tau))}')
+    raw_mean_flux = np.mean(np.exp(-rsd_tau))
+    print(f'Raw mean flux is {raw_mean_flux}')
+    
     rsd_tau = np.expand_dims(rsd_tau, 0)
     uni.final_tau_RSD = rsd_tau
 
