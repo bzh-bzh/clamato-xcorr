@@ -65,13 +65,6 @@ def gen_crosscorr(ivol, iabs, igal):
     #                                                                  ivol))
 
     npix = lyapix.npix
-    
-    # HACK: Carry out mean-flux correction
-#     fmean_str = ascii.read(os.path.join(constants.CLAMATO_DIR_BASE, f'fmean_measured_{constants.DATA_VERSION}.dat'))
-#     zmid = fmean_str['zmid']
-#     F_mean = fmean_str['F_mean']
-
-#     lyapix.delta = ((1.+lyapix.delta)/np.exp(-taueff_evo(lyapix.z)))-1.
 
     ### Read in galaxies 
     # We use the catalog created with Create_GalzMocks.IPYNB
