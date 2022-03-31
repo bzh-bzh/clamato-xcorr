@@ -37,7 +37,7 @@ class lyapix:
         pixfile.close()
 
         # compute pixel weights
-        self.w = 1./(0.065*((1.+self.z)/3.25)**3.8 + self.sig**2)
+        self.w = lyapix.compute_pixel_weights(self.z, self.sig)
 
         # Compute comoving LOS distance to each pixel
         self.comdist = cosmo.comoving_distance(self.z)
@@ -49,6 +49,11 @@ class lyapix:
             self.rng = np.random.default_rng()
         else:
             self.rng = rng
+            
+    @staticmethod
+    def compute_pixel_weights(z, sig):
+        return 1./(0.065*((1.+z)/3.25)**3.8 + sig**2)
+            
     def var_forest(z_in):
         """ Return intrinsic Lya-forest variance as function of redshift"""
         return 0.065 * ( (1.+z_in)/3.25 )**3.8
