@@ -54,7 +54,8 @@ N_PROC = multiprocessing.cpu_count()
 def taueff_evo(z):
     return 0.001845 * (1.+z)**3.924
 
-def gen_crosscorr(ivol, iabs, igal):
+def gen_crosscorr(args):
+    ivol, iabs, igal = args
     # tstart = time.time()
     abssuffix = '{0:03d}'.format(ivol+iabs*N_VOL)
 
@@ -141,4 +142,4 @@ arguments = [(ivol, iabs, igal) for ivol in np.arange(1, N_VOL + 1) for iabs in 
 #arguments = reversed(arguments)
 
 with multiprocessing.Pool(N_PROC) as pool:
-    pool.starmap(gen_crosscorr, tqdm.tqdm(arguments))
+    list(tqdm.tqdm(pool.imap(gen_crosscorr, arguments), total=len(arguments)))
