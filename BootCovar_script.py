@@ -57,6 +57,7 @@ seed_seq = np.random.SeedSequence(entropy=randseed_in)
 LyaPix = xcorr.lyapix(pixfil,cosmo=cosmo)
 print("Read in {0:d} Ly-a forest pixels".format(LyaPix.npix))
 npix = LyaPix.npix
+LyaPix_SkewerRec = LyaPix.gen_SkewerRec()
 
 # Read in galaxy positions
 gal_table = ascii.read(galfil)
@@ -96,7 +97,7 @@ def do_resampling(n_sub_partial, seed):
         # Make a copy of the pixels and resample
         LyaPixTmp = copy.deepcopy(LyaPix)
         LyaPixTmp.rng = rng
-        LyaPixTmp = LyaPixTmp.resample()
+        LyaPixTmp = LyaPixTmp.resample_skewer(SkewerRec=LyaPix_SkewerRec)
         # Resample galaxy positions
         GalCoordTmp = GalCoords[rng.choice(ngal,ngal,replace=True)]
         XCorrTmp, _ = xcorr.xcorr_gal_lya(GalCoordTmp, LyaPixTmp,SigEdges, PiEdges,
