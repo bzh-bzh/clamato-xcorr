@@ -1,0 +1,18 @@
+# Survey to cross-correlate
+survey: 'zDeep'
+# Prior model parameters.
+# Right now, feed in the best model-grid point. This has to be in the model grid!
+# We determine the sigma of the prior Gaussian by taking the difference between this and the next largest parameter in the grid.
+# Not used in the prior right now! We only use to initialize walker positions in a ball/ellipse around this point.
+prior_bias: 2.9
+# Mpc/h
+prior_sigz: 3.16228
+# Mpc/h
+prior_dz: 1.8
+# MCMC parameters
+# Divide by 2 to get number of (logical) cores used.
+n_walkers: 64
+n_step: 5000
+rng_seed: 3673938111
+# Set to -1 to use maximum number of CPUs.
+n_processes: 32
