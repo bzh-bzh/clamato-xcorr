@@ -2,6 +2,7 @@ import os
 import glob
 import sys
 import multiprocessing
+import pickle
 import time
 
 from astropy.io import ascii
@@ -25,6 +26,8 @@ os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
 # os.environ['OMP_PLACES'] = 'threads'
 
 # Constants
+REGEN_MODEL_CACHE = False
+
 OBS_DIR = os.path.join(constants.XCORR_DIR_BASE, 'obs')
 OBS_SUFFIX = '_globalf_'
 
@@ -32,9 +35,6 @@ MOCK_COVAR_DIR = os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar')
 COVAR_SUFFIX = 'mock'
 
 MODEL_DIR = os.path.join(constants.MODEL_DIR_BASE, 'model_grid_v1')
-
-OUTPUT_FILE_DIR = '/global/homes/b/bzh/clamato-xcorr/data/mcmc'
-OUTPUT_FIGURE_DIR = '/global/homes/b/bzh/clamato-xcorr/figures/mcmc'
 
 # Read in bin edges
 PiBin_fil = os.path.join(constants.XCORR_DIR_BASE, 'bins23_pi_0-30hMpc.txt')
@@ -57,6 +57,8 @@ n_dim = len(init_theta)
 n_walkers = input_cfg['n_walkers']
 n_step = input_cfg['n_step']
 seed = input_cfg['rng_seed']
+# If resuming from a backend hdf5 file, the last step's random state is re-used, so we don't need to worry about
+# stale RNG for repeated short-length runs of this script.
 np.random.seed(seed)
 n_proc = input_cfg['n_processes']
 if n_proc == -1:
@@ -65,7 +67,15 @@ if n_proc == -1:
 
 # Load in model grid, as global.
 st = time.time()
-model_func = xcorrmodel.ModelFunc([xcorrmodel.XCorrModel(f) for f in glob.glob(os.path.join(MODEL_DIR, 'linear_cross_*.txt'))])
+model_cache_path = os.path.join(constants.MCMC_DIR_BASE, 'model_cache.pickle')
+if os.path.exists(model_cache_path) and not REGEN_MODEL_CACHE:
+    with open(model_cache_path, 'rb') as f:
+        model_list = pickle.load(f)
+else:
+    model_list = [xcorrmodel.XCorrModel(f) for f in glob.glob(os.path.join(MODEL_DIR, 'linear_cross_*.txt'))]
+    with open(model_cache_path, 'wb') as f:
+        pickle.dump(model_list, f)
+model_func = xcorrmodel.ModelFunc(model_list)
 print(f'Loaded model grid in {time.time() - st} sec.')
 
 xcorr_obs = np.load(os.path.join(OBS_DIR, f'xcorr_{survey_name}{OBS_SUFFIX}{constants.DATA_VERSION}.npy'))
@@ -112,7 +122,7 @@ for i in range(len(walker_pos)):
     while not check_bounds(walker_pos[i]):
         walker_pos[i] = np.random.normal(loc=init_theta, scale=(bias_step, sigz_step, dz_step))
 
-chain_file_path = os.path.join(OUTPUT_FILE_DIR, f'chain_{survey_name}.hdf5')
+chain_file_path = os.path.join(constants.MCMC_DIR_BASE, f'chain_{survey_name}.hdf5')
 backend = emcee.backends.HDFBackend(chain_file_path)   
 if not os.path.exists(chain_file_path) or (not backend.iteration):
     print(f'Backend file {chain_file_path} is empty: initializing a new chain.')
