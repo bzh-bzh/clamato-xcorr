@@ -4,6 +4,8 @@ import sys
 import multiprocessing
 import pickle
 import time
+import signal
+import logging
 
 from astropy.io import ascii
 import emcee
@@ -15,6 +17,34 @@ from matplotlib import pyplot as plt
 
 import xcorrmodel
 import constants
+
+
+# https://stackoverflow.com/questions/842557/how-to-prevent-a-block-of-code-from-being-interrupted-by-keyboardinterrupt-in-py
+class DelayedKeyboardInterrupt:
+    def __enter__(self):
+        self.signal_received = False
+        self.old_handler = signal.signal(signal.SIGINT, self.handler)
+                
+    def handler(self, sig, frame):
+        self.signal_received = (sig, frame)
+        logging.debug('SIGINT received. Delaying KeyboardInterrupt.')
+    
+    def __exit__(self, type, value, traceback):
+        signal.signal(signal.SIGINT, self.old_handler)
+        if self.signal_received:
+            self.old_handler(*self.signal_received)
+            
+# Subclass of HDFBackend that delays exit upon SIGINT (CTRL-C) until the HDF file is finished being written to,
+# so prevent some file consistency errors on sudden interrupt.
+# Of course, this won't stop an exit between a call to grow() and a call to save_step(), so it's not totally safe.
+class SafeHDFBackend(emcee.backends.HDFBackend):
+    def grow(self, *args, **kwargs):
+        with DelayedKeyboardInterrupt():
+            super().grow(*args, **kwargs)
+    
+    def save_step(self, *args, **kwargs):
+        with DelayedKeyboardInterrupt():
+            super().save_step(*args, **kwargs)
 
 
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
@@ -112,6 +142,8 @@ def log_prob(theta):
     else:
         return log_likelihood(theta) + lp
 
+# print(f'Bounds of bias are [{model_func.bias_lim[0]}, {model_func.bias_lim[1]}]')
+# print(f'Bounds of sigz are [{model_func.sigz_lim[0]}, {model_func.sigz_lim[1]}]')
 
 bias_step = 0.1
 # sigz_step = np.mean(np.diff(np.sort(model_func.sigz_arr)))
@@ -123,7 +155,7 @@ for i in range(len(walker_pos)):
         walker_pos[i] = np.random.normal(loc=init_theta, scale=(bias_step, sigz_step, dz_step))
 
 chain_file_path = os.path.join(constants.MCMC_DIR_BASE, f'chain_{survey_name}.hdf5')
-backend = emcee.backends.HDFBackend(chain_file_path)   
+backend = SafeHDFBackend(chain_file_path)
 if not os.path.exists(chain_file_path) or (not backend.iteration):
     print(f'Backend file {chain_file_path} is empty: initializing a new chain.')
     backend.reset(n_walkers, n_dim)
