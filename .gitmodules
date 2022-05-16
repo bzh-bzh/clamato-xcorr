@@ -1,3 +1,6 @@
 [submodule "crosscorr2017"]
 	path = crosscorr2017
 	url = https://github.com/kheegan/crosscorr2017.git
+[submodule "vega"]
+	path = vega
+	url = https://github.com/andreicuceu/vega.git
