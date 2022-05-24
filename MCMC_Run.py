@@ -6,16 +6,17 @@ import pickle
 import time
 import signal
 import logging
+import collections
+from pathlib import Path
 
+from vega import VegaInterface
 from astropy.io import ascii
 import emcee
-import corner
 import yaml
 import numpy as np
 from scipy.stats import multivariate_normal
 from matplotlib import pyplot as plt
 
-import xcorrmodel
 import constants
 
 
@@ -48,6 +49,7 @@ class SafeHDFBackend(emcee.backends.HDFBackend):
 
 
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 # Turn off OMP parallelism as it will interfere with emcee walker parallelism.
 # Actually, one of these options causes scipy to single-thread I think.
 # TODO: Figure this out?
@@ -56,32 +58,27 @@ os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
 # os.environ['OMP_PLACES'] = 'threads'
 
 # Constants
-REGEN_MODEL_CACHE = False
+BASE_DIR = Path('/global/homes/b/bzh/clamato-xcorr/data/mcmc')
 
-OBS_DIR = os.path.join(constants.XCORR_DIR_BASE, 'obs')
-OBS_SUFFIX = '_globalf_'
-
-MOCK_COVAR_DIR = os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar')
-COVAR_SUFFIX = 'mock'
-
-MODEL_DIR = os.path.join(constants.MODEL_DIR_BASE, 'model_grid_v1')
-
-# Read in bin edges
-PiBin_fil = os.path.join(constants.XCORR_DIR_BASE, 'bins23_pi_0-30hMpc.txt')
-SigBin_fil = os.path.join(constants.XCORR_DIR_BASE, 'bins10_sigma_0-30hMpc.txt')
-PiBins0 = ascii.read(PiBin_fil)
-SigBins0 = ascii.read(SigBin_fil)
-PiEdges = PiBins0['pi_edges'].data
-SigEdges = SigBins0['sigma_edges'].data
-
+# Order that these are initialized in is the order of the data vector theta which emcee uses.
+PARAM_LIMITS = collections.OrderedDict()
+PARAM_LIMITS['bias_QSO']         = (0, np.inf)
+PARAM_LIMITS['beta_QSO']         = (0, np.inf)
+PARAM_LIMITS['par_sigma_smooth'] = (0, np.inf)
+PARAM_LIMITS['drp_QSO']          = (-np.inf, np.inf)
+PARAM_LIMITS['bias_hcd']         = (-np.inf, 0)
+PARAM_LIMITS['beta_hcd']         = (0, np.inf)
 
 assert len(sys.argv) == 2
 # Open config file and parse parameters
 with open(sys.argv[1], 'r') as f:
     input_cfg = yaml.safe_load(f)
+# Special handling for beta_QSO.
+if input_cfg['priors']['beta_QSO'] is None:
+    input_cfg['priors']['beta_QSO'] = input_cfg['priors']['bias_QSO']**-1
 
 survey_name = input_cfg['survey']
-init_theta = np.array([input_cfg['prior_bias'], input_cfg['prior_sigz'], input_cfg['prior_dz']]) # Units for sigz and dz are Mpc/h, not cMpc!
+init_theta = np.array([input_cfg['priors'][k] for k in PARAM_LIMITS.keys()])
 assert np.issubdtype(init_theta.dtype, np.number)
 n_dim = len(init_theta)
 n_walkers = input_cfg['n_walkers']
@@ -93,43 +90,27 @@ np.random.seed(seed)
 n_proc = input_cfg['n_processes']
 if n_proc == -1:
     n_proc = multiprocessing.cpu_count()
+    
+data_dir = BASE_DIR / survey_name
+vega = VegaInterface(data_dir / f'main_{survey_name}.ini')
 
-
-# Load in model grid, as global.
-st = time.time()
-model_cache_path = os.path.join(constants.MCMC_DIR_BASE, 'model_cache.pickle')
-if os.path.exists(model_cache_path) and not REGEN_MODEL_CACHE:
-    with open(model_cache_path, 'rb') as f:
-        model_list = pickle.load(f)
-else:
-    model_list = [xcorrmodel.XCorrModel(f) for f in glob.glob(os.path.join(MODEL_DIR, 'linear_cross_*.txt'))]
-    with open(model_cache_path, 'wb') as f:
-        pickle.dump(model_list, f)
-model_func = xcorrmodel.ModelFunc(model_list)
-print(f'Loaded model grid in {time.time() - st} sec.')
-
-xcorr_obs = np.load(os.path.join(OBS_DIR, f'xcorr_{survey_name}{OBS_SUFFIX}{constants.DATA_VERSION}.npy'))
-covar_path = glob.glob(os.path.join(MOCK_COVAR_DIR, f'covar_{COVAR_SUFFIX}*_{survey_name}_{constants.DATA_VERSION}.npy'))
-assert len(covar_path) == 1
-covar = np.load(covar_path[0])
-invcov = np.linalg.pinv(covar)
-
-
-# Defined after we load xcorr_obs and invcov so we don't have massive pickling overhead when multiprocessing
+# Defined after we load xcorr_obs and invcov so we don't have massive pickling overhead when multiprocessing.
 def log_likelihood(theta):
-    bias, sigz, dz = theta
-    xcorr_diff = (xcorr_obs - model_func.XCorrInterpBin(bias, sigz, dz, SigEdges, PiEdges)).flatten()
-    chisq = xcorr_diff.T @ invcov @ xcorr_diff
-    return -chisq # Ignore constant factors, since M-H only needs a distribution \propto the true prob
+    # Since the vega object is copied into each process, we should be able to get away with mutating the params dict stored in it.
+    # Not so if we decide to do threading, for whatever reason!
+    for p, k in zip(theta, PARAM_LIMITS.keys()):
+        vega.params[k] = p
+    return vega.log_lik()
 
 def check_bounds(theta):
-    return (model_func.bias_lim[0] <= theta[0] <= model_func.bias_lim[1] # bias
-          and model_func.sigz_lim[0] <= theta[1] <= model_func.sigz_lim[1] # sig-z
-          and -4 <= theta[2] <= 4)
+    for p, bound in zip(theta, PARAM_LIMITS.values()):
+        if not bound[0] <= p <= bound[1]:
+            return False
+    return True
 
 # Flat
 def log_prior(theta):
-    if check_bounds(theta): # delta-z
+    if check_bounds(theta):
         # Extrapolating; don't let the walkers go outside this area by returning -inf.
         return 0
     else:
@@ -145,16 +126,12 @@ def log_prob(theta):
 # print(f'Bounds of bias are [{model_func.bias_lim[0]}, {model_func.bias_lim[1]}]')
 # print(f'Bounds of sigz are [{model_func.sigz_lim[0]}, {model_func.sigz_lim[1]}]')
 
-bias_step = 0.1
-# sigz_step = np.mean(np.diff(np.sort(model_func.sigz_arr)))
-sigz_step = 0.06 # Just eyeballing the smallest sigz step; hopefully the walkers spread out (that's what the docs say).
-dz_step = 8 / 81 # From model fitting grid; arbitrary choice
-walker_pos = np.random.normal(loc=init_theta, scale=(bias_step, sigz_step, dz_step), size=(n_walkers, n_dim))
+walker_pos = np.random.normal(loc=init_theta, scale=1e-4, size=(n_walkers, n_dim))
 for i in range(len(walker_pos)):
     while not check_bounds(walker_pos[i]):
-        walker_pos[i] = np.random.normal(loc=init_theta, scale=(bias_step, sigz_step, dz_step))
+        walker_pos[i] = np.random.normal(loc=init_theta, scale=1e-4, size=(n_dim,))
 
-chain_file_path = os.path.join(constants.MCMC_DIR_BASE, f'chain_{survey_name}.hdf5')
+chain_file_path = data_dir / f'chain_{survey_name}.hdf5'
 backend = SafeHDFBackend(chain_file_path)
 if not os.path.exists(chain_file_path) or (not backend.iteration):
     print(f'Backend file {chain_file_path} is empty: initializing a new chain.')
@@ -165,11 +142,4 @@ else:
 
 with multiprocessing.Pool(n_proc) as p:
     sampler = emcee.EnsembleSampler(n_walkers, n_dim, log_prob, pool=p, backend=backend)
-    sampler.run_mcmc(walker_pos, n_step - backend.iteration, progress=False)
-    # intermediate_step = 100
-    # for i in np.arange(0, n_step, intermediate_step):
-    #     if i == 0:
-    #         sampler.run_mcmc(walker_pos, intermediate_step, progress=True)
-    #     else:
-    #         sampler.run_mcmc(None, intermediate_step, progress=True)
-    #     print(f'# iters: {i + intermediate_step}: AT {sampler.get_autocorr_time(quiet=True)} AF {sampler.acceptance_fraction}')
+    sampler.run_mcmc(walker_pos, n_step - backend.iteration, progress=True)
