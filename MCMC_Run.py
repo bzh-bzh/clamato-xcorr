@@ -9,6 +9,15 @@ import logging
 import collections
 from pathlib import Path
 
+os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+# Turn off OMP parallelism as it will interfere with emcee walker parallelism.
+# Actually, one of these options causes scipy to single-thread I think.
+# TODO: Figure this out?
+# os.environ['OMP_NUM_THREADS'] = '1'
+# os.environ['OMP_PROC_BIND'] = 'true'
+# os.environ['OMP_PLACES'] = 'threads'
+
 from vega import VegaInterface
 from astropy.io import ascii
 import emcee
@@ -47,38 +56,28 @@ class SafeHDFBackend(emcee.backends.HDFBackend):
         with DelayedKeyboardInterrupt():
             super().save_step(*args, **kwargs)
 
-
-os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-# Turn off OMP parallelism as it will interfere with emcee walker parallelism.
-# Actually, one of these options causes scipy to single-thread I think.
-# TODO: Figure this out?
-# os.environ['OMP_NUM_THREADS'] = '1'
-# os.environ['OMP_PROC_BIND'] = 'true'
-# os.environ['OMP_PLACES'] = 'threads'
-
 # Constants
 BASE_DIR = Path('/global/homes/b/bzh/clamato-xcorr/data/mcmc')
 
 # Order that these are initialized in is the order of the data vector theta which emcee uses.
 PARAM_LIMITS = collections.OrderedDict()
-PARAM_LIMITS['bias_QSO']         = (0, np.inf)
-PARAM_LIMITS['beta_QSO']         = (0, np.inf)
-PARAM_LIMITS['par_sigma_smooth'] = (0, np.inf)
-PARAM_LIMITS['drp_QSO']          = (-np.inf, np.inf)
-PARAM_LIMITS['bias_hcd']         = (-np.inf, 0)
-PARAM_LIMITS['beta_hcd']         = (0, np.inf)
+PARAM_LIMITS['bias_QSO']         = (0, 10)
+#PARAM_LIMITS['beta_QSO']         = (0, 10)
+PARAM_LIMITS['par_sigma_smooth'] = (0, 10)
+PARAM_LIMITS['drp_QSO']          = (-4, 4)
+PARAM_LIMITS['bias_hcd']         = (-0.2, 0)
+PARAM_LIMITS['beta_hcd']         = (0, 10)
 
 assert len(sys.argv) == 2
 # Open config file and parse parameters
 with open(sys.argv[1], 'r') as f:
     input_cfg = yaml.safe_load(f)
 # Special handling for beta_QSO.
-if input_cfg['priors']['beta_QSO'] is None:
-    input_cfg['priors']['beta_QSO'] = input_cfg['priors']['bias_QSO']**-1
+#if input_cfg['priors']['beta_QSO'] is None:
+#    input_cfg['priors']['beta_QSO'] = input_cfg['priors']['bias_QSO']**-1
 
 survey_name = input_cfg['survey']
-init_theta = np.array([input_cfg['priors'][k] for k in PARAM_LIMITS.keys()])
+init_theta = np.array([input_cfg['priors'][k] for k in PARAM_LIMITS.keys() if k != 'beta_QSO']) # TODO: remove this?
 assert np.issubdtype(init_theta.dtype, np.number)
 n_dim = len(init_theta)
 n_walkers = input_cfg['n_walkers']
@@ -93,14 +92,17 @@ if n_proc == -1:
     
 data_dir = BASE_DIR / survey_name
 vega = VegaInterface(data_dir / f'main_{survey_name}.ini')
+assert np.all(vega.data['qsoxlya'].mask)
+assert not vega.priors
 
-# Defined after we load xcorr_obs and invcov so we don't have massive pickling overhead when multiprocessing.
+# Defined after we load the vega interface so we don't have massive pickling overhead when multiprocessing.
 def log_likelihood(theta):
     # Since the vega object is copied into each process, we should be able to get away with mutating the params dict stored in it.
     # Not so if we decide to do threading, for whatever reason!
     for p, k in zip(theta, PARAM_LIMITS.keys()):
         vega.params[k] = p
-    return vega.log_lik()
+    vega.params['beta_QSO'] = vega.params['bias_QSO']**-1
+    return -vega.chi2()
 
 def check_bounds(theta):
     for p, bound in zip(theta, PARAM_LIMITS.values()):
