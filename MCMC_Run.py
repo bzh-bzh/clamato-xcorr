@@ -64,7 +64,7 @@ PARAM_LIMITS = collections.OrderedDict()
 PARAM_LIMITS['bias_QSO']         = (0, 10)
 PARAM_LIMITS['beta_QSO']         = (0, 10)
 PARAM_LIMITS['par_sigma_smooth'] = (0, 10)
-PARAM_LIMITS['drp_QSO']          = (-4, 4)
+PARAM_LIMITS['drp_QSO']          = (-10, 10)
 PARAM_LIMITS['bias_hcd']         = (-0.2, 0)
 PARAM_LIMITS['beta_hcd']         = (0, 10)
 
