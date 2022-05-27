@@ -12,10 +12,14 @@ priors:
     # From the BOSS DR paper.
     bias_hcd: -0.0501
     beta_hcd: 0.703
+limit_overrides:
+    par_sigma_smooth:
+      - 0
+      - 20
 # MCMC parameters
 # Divide by 2 to get number of (logical) cores used.
-n_walkers: 512
-n_step: 5000
+n_walkers: 64
+n_step: 40000
 rng_seed: 3673938111
 # Set to -1 to use maximum number of CPUs.
 n_processes: 32

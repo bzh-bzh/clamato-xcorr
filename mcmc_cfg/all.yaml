@@ -1,5 +1,5 @@
 # Survey to cross-correlate
-survey: 'zDeep'
+survey: 'all'
 # Prior model parameters.
 # The keys for these are the parameters which will be modified in the Vega config.
 # Prior limits are specified in the Python script itself, to avoid repetition.
@@ -7,8 +7,8 @@ priors:
     bias_QSO: 2.9
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
-    par_sigma_smooth: 3.16228
-    drp_QSO: -1.8
+    par_sigma_smooth: 2
+    drp_QSO: 0
     # From the BOSS DR paper.
     bias_hcd: -0.0501
     beta_hcd: 0.703

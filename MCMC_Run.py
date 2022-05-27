@@ -64,9 +64,9 @@ PARAM_LIMITS = collections.OrderedDict()
 PARAM_LIMITS['bias_QSO']         = (0, 10)
 #PARAM_LIMITS['beta_QSO']         = (0, 10)
 PARAM_LIMITS['par_sigma_smooth'] = (0, 10)
-PARAM_LIMITS['drp_QSO']          = (-4, 4)
-PARAM_LIMITS['bias_hcd']         = (-0.2, 0)
-PARAM_LIMITS['beta_hcd']         = (0, 10)
+PARAM_LIMITS['drp_QSO']          = (-10, 10)
+PARAM_LIMITS['bias_hcd']         = (-10, 0)
+PARAM_LIMITS['beta_hcd']         = (0, 50)
 
 assert len(sys.argv) == 2
 # Open config file and parse parameters
@@ -90,6 +90,10 @@ n_proc = input_cfg['n_processes']
 if n_proc == -1:
     n_proc = multiprocessing.cpu_count()
     
+if 'limit_overrides' in input_cfg and input_cfg['limit_overrides']:
+    for param_name, lim in input_cfg['limit_overrides'].items():
+        print(f'Overriding limit for {param_name} to be {lim}.')
+        PARAM_LIMITS[param_name] = tuple(lim)
 data_dir = BASE_DIR / survey_name
 vega = VegaInterface(data_dir / f'main_{survey_name}.ini')
 assert np.all(vega.data['qsoxlya'].mask)
@@ -101,7 +105,7 @@ def log_likelihood(theta):
     # Not so if we decide to do threading, for whatever reason!
     for p, k in zip(theta, PARAM_LIMITS.keys()):
         vega.params[k] = p
-    vega.params['beta_QSO'] = vega.params['bias_QSO']**-1
+    vega.params['beta_QSO'] = vega.params['growth_rate'] / vega.params['bias_QSO']
     return -vega.chi2()
 
 def check_bounds(theta):
