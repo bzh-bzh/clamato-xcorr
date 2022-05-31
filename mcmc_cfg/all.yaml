@@ -1,13 +1,13 @@
 # Survey to cross-correlate
 survey: 'all'
-# Prior model parameters.
+# Initial model parameters.
 # The keys for these are the parameters which will be modified in the Vega config.
-# Prior limits are specified in the Python script itself, to avoid repetition.
-priors:
+# Global prior limits are specified in the Python script itself, to avoid repetition.
+initial:
     bias_QSO: 2.9
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
-    par_sigma_smooth: 2
+    sigma_velo_disp_gauss_QSO: 2
     drp_QSO: 0
     # From the BOSS DR paper.
     bias_hcd: -0.0501

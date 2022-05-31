@@ -1,19 +1,28 @@
 # Survey to cross-correlate
 survey: '3dhst'
-# Prior model parameters.
+# Initial model parameters.
 # The keys for these are the parameters which will be modified in the Vega config.
-# Prior limits are specified in the Python script itself, to avoid repetition.
-priors:
+# Global prior limits are specified in the Python script itself, to avoid repetition.
+initial:
     bias_QSO: 0.8
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
-    par_sigma_smooth: 3.54813
+    sigma_velo_disp_gauss_QSO: 3.54813
     drp_QSO: -1.2
-    # From the BOSS DR paper.
-    bias_hcd: -0.0501
-    beta_hcd: 0.703
+# Assumed Gaussian, with values [mean, sigma].
+priors:
+    # Center from 3DHST redshift accuracy estimates, with sigma set to 30% arbitrarily.
+    sigma_velo_disp_gauss_QSO:
+       - 9.79
+       - 2.94
+fixed:
+    bias_hcd: 0
+    beta_hcd: 0
 limit_overrides:
-    par_sigma_smooth:
+    # bias_QSO:
+    #   - 0
+    #   - 20
+    sigma_velo_disp_gauss_QSO:
       - 0
       - 20
 # MCMC parameters

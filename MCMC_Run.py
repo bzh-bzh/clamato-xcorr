@@ -63,10 +63,11 @@ BASE_DIR = Path('/global/homes/b/bzh/clamato-xcorr/data/mcmc')
 PARAM_LIMITS_ALL = {
     'bias_QSO': (0, 10),
     'beta_QSO': (0, 10),
-    'par_sigma_smooth': (0, 10),
+    'sigma_velo_disp_gauss_QSO': (0, 10),
     'drp_QSO': (-10, 10),
-    'bias_hcd': (-10, 0),
-    'beta_hcd': (0, 50)
+    'bias_hcd': (-1, 1),
+    'beta_hcd': (0, 50),
+    'L0_hcd': (0, 20)
 }
 
 assert len(sys.argv) == 2
@@ -74,16 +75,16 @@ assert len(sys.argv) == 2
 with open(sys.argv[1], 'r') as f:
     input_cfg = yaml.safe_load(f)
 # Special handling for beta_QSO.
-#if input_cfg['priors']['beta_QSO'] is None:
-#    input_cfg['priors']['beta_QSO'] = input_cfg['priors']['bias_QSO']**-1
+#if input_cfg['initial']['beta_QSO'] is None:
+#    input_cfg['initial']['beta_QSO'] = input_cfg['initial']['bias_QSO']**-1
 
 survey_name = input_cfg['survey']
 # Initialize best-guess vector and parameter limits.
 init_theta = []
 param_limits = collections.OrderedDict()
-for k, p in input_cfg['priors'].items():
+for k, p in input_cfg['initial'].items():
     if k == 'beta_QSO' and p is None:
-        print('beta_QSO prior is none; fixing inverse relationship with bias_QSO.')
+        print('beta_QSO initial value is none; fixing inverse relationship with bias_QSO.')
         continue
     init_theta.append(p)
     param_limits[k] = PARAM_LIMITS_ALL[k]
@@ -112,9 +113,13 @@ assert np.all(vega.data['qsoxlya'].mask)
 assert not vega.priors
 
 # Fixed parameters in config.
-for k, p in input_cfg['fixed'].items():
-    assert k not in param_limits
-    vega.params[k] = p
+if 'fixed' in input_cfg and input_cfg['fixed']:
+    for k, p in input_cfg['fixed'].items():
+        assert k not in param_limits
+        vega.params[k] = p
+# Priors in config.
+if 'priors' in input_cfg.keys() and input_cfg['priors']:
+    vega.priors = input_cfg['priors']
 
 # Defined after we load the vega interface so we don't have massive pickling overhead when multiprocessing.
 def log_likelihood(theta):
