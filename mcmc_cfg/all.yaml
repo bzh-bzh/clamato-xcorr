@@ -10,8 +10,17 @@ initial:
     sigma_velo_disp_gauss_QSO: 2
     drp_QSO: 0
     # From the BOSS DR paper.
-    bias_hcd: -0.0501
-    beta_hcd: 0.703
+    bias_hcd: -0.05
+    beta_hcd: 0.704
+    L0_hcd: 15
+limit_overrides:
+    beta_hcd:
+      - 0
+      - 10
+priors:
+    beta_hcd:
+      - 0.5
+      - 0.09
 # MCMC parameters
 # Divide by 2 to get number of (logical) cores used.
 n_walkers: 64
