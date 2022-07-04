@@ -55,6 +55,40 @@ class SafeHDFBackend(emcee.backends.HDFBackend):
     def save_step(self, *args, **kwargs):
         with DelayedKeyboardInterrupt():
             super().save_step(*args, **kwargs)
+            
+class EarlyTermEnsembleSampler(emcee.EnsembleSampler):            
+    def run_mcmc(self, initial_state, nsteps, **kwargs):
+        """
+        Iterate :func:`sample` for ``nsteps`` iterations and return the result
+        Args:
+            initial_state: The initial state or position vector. Can also be
+                ``None`` to resume from where :func:``run_mcmc`` left off the
+                last time it executed.
+            nsteps: The number of steps to run.
+        Other parameters are directly passed to :func:`sample`.
+        This method returns the most recent result from :func:`sample`.
+        """
+        if initial_state is None:
+            if self._previous_state is None:
+                raise ValueError(
+                    "Cannot have `initial_state=None` if run_mcmc has never "
+                    "been called."
+                )
+            initial_state = self._previous_state
+
+        results = None
+        for results in self.sample(initial_state, iterations=nsteps, **kwargs):
+            # Changes here.
+            if not self.iteration % 100:
+                continue
+            max_tau = np.max(sampler.get_autocorr_time(tol=0))
+            if self.iteration >= 1000 and 1.5 * max_tau < self.iteration // 50:
+                print(f'(n_iter // 50): {self.iteration // 50} is >150% of maximum autocorrelation time: {max_tau:.3}; terminating early.')
+                break
+
+        # Store so that the ``initial_state=None`` case will work
+        self._previous_state = results
+        return results
 
 # Constants
 BASE_DIR = Path('/global/homes/b/bzh/clamato-xcorr/data/mcmc')
@@ -106,11 +140,15 @@ np.random.seed(seed)
 n_proc = input_cfg['n_processes']
 if n_proc == -1:
     n_proc = multiprocessing.cpu_count()
+if 'base_dir' in input_cfg:
+    BASE_DIR = Path(input_cfg['base_dir'])
 
-data_dir = BASE_DIR / survey_name
+# TODO: this is a totally ugly hack to deal with running non-survey-named .ini files. 
+# Probably want to think of a better way later.
+data_dir = BASE_DIR / survey_name.split('_')[0]
 vega = VegaInterface(data_dir / f'main_{survey_name}.ini')
-assert np.all(vega.data['qsoxlya'].mask)
 assert not vega.priors
+print(np.sum(vega.data['qsoxlya'].mask))
 
 # Fixed parameters in config.
 if 'fixed' in input_cfg and input_cfg['fixed']:
@@ -160,7 +198,7 @@ for i in range(len(walker_pos)):
     while not check_bounds(walker_pos[i]):
         walker_pos[i] = np.random.normal(loc=init_theta, scale=1e-4, size=(n_dim,))
 
-chain_file_path = data_dir / f'chain_{survey_name}.hdf5'
+chain_file_path = data_dir / f'chain_{survey_name}{"_" + input_cfg["chain_file_suffix"] if input_cfg["chain_file_suffix"] else ""}.hdf5'
 backend = SafeHDFBackend(chain_file_path)
 if not os.path.exists(chain_file_path) or (not backend.iteration):
     print(f'Backend file {chain_file_path} is empty: initializing a new chain.')
@@ -170,5 +208,5 @@ else:
     walker_pos = None
 
 with multiprocessing.Pool(n_proc) as p:
-    sampler = emcee.EnsembleSampler(n_walkers, n_dim, log_prob, pool=p, backend=backend)
+    sampler = EarlyTermEnsembleSampler(n_walkers, n_dim, log_prob, pool=p, backend=backend)
     sampler.run_mcmc(walker_pos, n_step - backend.iteration, progress=True)
