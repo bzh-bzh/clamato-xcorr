@@ -33,7 +33,7 @@ conda activate vega
 cd /global/u1/b/bzh/clamato-xcorr
 srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/3DHST.yaml &
 srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/CLAMATO.yaml &
-#srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/MOSDEF.yaml &
+srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/MOSDEF.yaml &
 srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/VUDS.yaml &
 srun -N 1 -n 1 -c 64 --cpu_bind=cores python3 MCMC_Run.py mcmc_cfg/zDeep.yaml &
 wait
