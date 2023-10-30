@@ -4,7 +4,7 @@ galaxy_file: '/global/homes/b/bzh/clamato-xcorr/data/coeval/cat_galxcorr_cl2020_
 survey: 'MOSDEF' 
 los_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins23_pi_0-30hMpc.txt'
 trans_bin_file: '/global/homes/b/bzh/clamato-xcorr/data/xcorr/bins10_sigma_0-30hMpc.txt'
-n_bootstrap: 7200
+n_bootstrap: 21600
 # Set this to 'null' to use no seed.
 # Has to be long, as it's used in a seed sequence 
 rng_seed: 225639689182001257728712319951377476776
