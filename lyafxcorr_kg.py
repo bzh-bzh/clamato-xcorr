@@ -51,6 +51,10 @@ class lyapix:
             self.rng = rng
             
     @staticmethod
+    def taueff_evo(z):
+        return 0.001845 * (1.+z)**3.924
+            
+    @staticmethod
     def compute_pixel_weights(z, sig):
         return 1./(0.065*((1.+z)/3.25)**3.8 + sig**2)
             
@@ -67,28 +71,30 @@ class lyapix:
         Also creates a new attribute called ind_vec, which is the 
         sequence of indices used to create the current resample.
         """
-        ind_vec = self.rng.choice(self.npix, self.npix, replace=True)
+        # Depreciated!
+        raise RuntimeError
+#         ind_vec = self.rng.choice(self.npix, self.npix, replace=True)
 
-        ratmp = self.ra
-        dectmp = self.dec
-        ztmp = self.z
-        sigtmp = self.sig
-        deltatmp = self.delta
-        wtmp = self.w
-        comdisttmp = self.comdist
-        coordtmp = self.coord
+#         ratmp = self.ra
+#         dectmp = self.dec
+#         ztmp = self.z
+#         sigtmp = self.sig
+#         deltatmp = self.delta
+#         wtmp = self.w
+#         comdisttmp = self.comdist
+#         coordtmp = self.coord
         
-        self.ra = ratmp[ind_vec]
-        self.dec = dectmp[ind_vec]
-        self.z   = ztmp[ind_vec]
-        self.sig = sigtmp[ind_vec]
-        self.delta = deltatmp[ind_vec]
-        self.w     = wtmp[ind_vec]
-        self.comdist = comdisttmp[ind_vec]
-        self.coord   = coordtmp[ind_vec]
+#         self.ra = ratmp[ind_vec]
+#         self.dec = dectmp[ind_vec]
+#         self.z   = ztmp[ind_vec]
+#         self.sig = sigtmp[ind_vec]
+#         self.delta = deltatmp[ind_vec]
+#         self.w     = wtmp[ind_vec]
+#         self.comdist = comdisttmp[ind_vec]
+#         self.coord   = coordtmp[ind_vec]
 
-        self.ind_vec = ind_vec
-        return self
+#         self.ind_vec = ind_vec
+#         return self
 
     def resample_skewer(self, SkewerRec=None):
         """
@@ -172,9 +178,10 @@ class lyapix:
         for ra_tmp, dec_tmp in radec_uniq:
             skewer_pos['RA'][ctr] = ra_tmp
             skewer_pos['Dec'][ctr] = dec_tmp
-            skewer_mask[ctr] = np.all(np.column_stack( 
-                [np.isclose(ra_tmp, self.ra,rtol=1.e-5),
-                 np.isclose(dec_tmp, self.dec, rtol=1.e-5)]), axis=1)
+            # skewer_mask[ctr] = np.all(np.column_stack( 
+            #     [np.isclose(ra_tmp, self.ra,rtol=1.e-5),
+            #      np.isclose(dec_tmp, self.dec, rtol=1.e-5)]), axis=1)
+            skewer_mask[ctr] = np.logical_and(ra_tmp == self.ra, dec_tmp == self.dec)
             ctr +=1
 
         SkewerRec = (skewer_pos, skewer_mask)
