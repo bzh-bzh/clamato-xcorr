@@ -1,4 +1,4 @@
-""" 
+n""" 
 Calculate Ly-alpha/galaxy cross-correlation for an ensemble of abs x galaxy realizations generated 
 in May 2019. 
 
@@ -126,6 +126,11 @@ def gen_crosscorr(args):
                                                    SigEdges, PiEdges, cosmo=cosmo, 
                                                    verbose=0)
     
+    # Compute Cross-Correlations for all galaxies
+    XCorr_all, NoXCorr_all = xcorr.xcorr_gal_lya(Coord_all, lyapix, 
+                                                   SigEdges, PiEdges, cosmo=cosmo, 
+                                                   verbose=0)
+    
     #print(ivol, iabs, igal, '|', len(NoXCorr_clamato),
     #      f'LyA: [{np.min(lyapix.ra)},{np.max(lyapix.ra)}]/[{np.min(lyapix.dec)},{np.max(lyapix.dec)}]',
     #      f'CLAMATO-gal: [{np.min(Coord_clamato.ra.deg)},{np.max(Coord_clamato.ra.deg)}]/[{np.min(Coord_clamato.dec.deg)},{np.max(Coord_clamato.dec.deg)}]')
@@ -136,6 +141,7 @@ def gen_crosscorr(args):
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_mosdef_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_mosdef.value)
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_vuds_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_vuds.value)
     np.save(os.path.join(mockdir, "crosscorr/xcorrmock_clamato_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_clamato.value)
+    np.save(os.path.join(mockdir, "crosscorr/xcorrmock_all_"+filesuffix+f"_{constants.DATA_VERSION}.npy"), XCorr_all.value)
 
 
 arguments = [(ivol, iabs, igal) for ivol in np.arange(1, N_VOL + 1) for iabs in np.arange(N_ABS) for igal in np.arange(N_GAL)]
