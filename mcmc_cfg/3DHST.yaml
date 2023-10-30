@@ -25,7 +25,12 @@ limit_overrides:
     sigma_velo_disp_gauss_QSO:
       - 0
       - 20
+    drp_QSO:
+      - -16
+      - 16
 # MCMC parameters
+# Leave blank to use no suffix
+chain_file_suffix:
 # Divide by 2 to get number of (logical) cores used.
 n_walkers: 64
 n_step: 40000
