@@ -1,5 +1,7 @@
 import os
-os.chdir('..')
+import sys
+from dotenv import find_dotenv
+sys.path.append(os.path.dirname(find_dotenv()))
 
 import numpy as np
 import numba
@@ -22,15 +24,15 @@ from astropy.coordinates import SkyCoord
 
 parser = argparse.ArgumentParser()
 parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST'])
-parser.add_argument('--output_folder', type=pathlib.Path, default=pathlib.Path(constants.BIAS_DIR_BASE) / 'mock' / 'gal')
-parser.add_argument('--n_realizations_per_bin', type=int, default=1000)
-parser.add_argument('--logmass_lower_bound', type=float, default=9)
-parser.add_argument('--logmass_upper_bound', type=float, default=13.4)
-parser.add_argument('--logmass_bin_size', type=float, default=0.1)
+parser.add_argument('--output-folder', type=pathlib.Path, default=pathlib.Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'mock' / 'gal')
+parser.add_argument('--n-realizations-per-bin', type=int, default=1000)
+parser.add_argument('--logmass-lower-bound', type=float, default=9)
+parser.add_argument('--logmass-upper-bound', type=float, default=13.4)
+parser.add_argument('--logmass-bin-size', type=float, default=0.1)
 args = parser.parse_args()
 
 np.random.seed(452813501)
-outdir = args['output_folder']
+outdir = args.output_folder
 os.makedirs(outdir, exist_ok=True)
 
 # Multiprocessing parameters.
@@ -98,7 +100,6 @@ def read_fofp_file(path):
     
     # Apply RSD.
     z_rsd_offset = halo_cat.VZ * ((1 + zmid) / cosmo.H(zmid) * littleh).value
-    plt.hist(z_rsd_offset, bins=100)
     halo_cat.Z += z_rsd_offset
     
     # In Mpc/h
@@ -117,49 +118,25 @@ xhalos = positions[:,0]#*256.
 yhalos = positions[:,1]#*256.
 zhalos = positions[:,2]#*256.
 
-# Reflect the 4 sides + 4 corners in the [x,y] dimension
-print(f'Simulation box length is {sim_boxlen_mpch} Mpc/h.')
-xleft = xhalos-sim_boxlen_mpch
-xright = xhalos+sim_boxlen_mpch
-ytop = yhalos+sim_boxlen_mpch
-ybottom=yhalos-sim_boxlen_mpch
-
-xhalos = np.concatenate( (xhalos, xleft, xright,    xhalos,    xhalos,
-                         xleft, xright, xright, xleft) )
-yhalos = np.concatenate( (yhalos, yhalos,       yhalos,     ybottom, ytop,
-                         ybottom, ybottom, ytop, ytop) )
-zhalos = np.concatenate( (zhalos, zhalos,       zhalos,      zhalos,       zhalos,
-                         zhalos,   zhalos,     zhalos,       zhalos) )
-masses=np.concatenate( (masses, masses, masses, masses, masses,
-                           masses,  masses, masses,  masses))
-
-
-
-@numba.njit
+# @numba.njit
 def select_halos(logmass_lb, logmass_ub, n_halos_subsamp, delta_z, sigma_z, seed):
     # This should be different for every function call!
     np.random.seed(seed)
     
-    mass_mask = np.logical_and(masses > 10**logmass_lb, masses <= 10**logmass_ub)
+    mass_mask_indices = np.argwhere(np.logical_and(masses > 10**logmass_lb, masses <= 10**logmass_ub)).flatten()
     
     # Select n_halos_subsamp halos from halos within the mass range.
-    # Do this by treating mass_mask as an array of probabilities for np.random.choice.
-    halos_here_indices = np.random.choice(np.arange(masses), 
+    halos_here_indices = np.random.choice(mass_mask_indices, 
                                           size=n_halos_subsamp, 
                                           # Sample with replacement since we want bootstrap errors.
-                                          replace=True,
-                                          p=mass_mask.astype(int) / np.sum(mass_mask))
-    # Now turn this array of selected indices back into a boolean mask. Horrible, I know.
-    halos_here = np.zeros(len(masses), dtype=bool)
-    halos_here[halos_here_indices] = True
-
-    nh_tmp = np.sum(halos_here)
+                                          replace=True)
+    nh_tmp = n_halos_subsamp
     #print('{} halos within footprint'.format(nh_tmp))
 
     # Positions and stellar masses of all halos within footprint
-    xh_tmp = xhalos[halos_here]
-    yh_tmp = yhalos[halos_here]
-    zh_tmp = zhalos[halos_here]
+    xh_tmp = xhalos[halos_here_indices]
+    yh_tmp = yhalos[halos_here_indices]
+    zh_tmp = zhalos[halos_here_indices]
         
     # Here, we also move half of the halos to the extended, second z-half of the volume
     ind_half_tmp = np.random.choice(np.arange(nh_tmp), 
@@ -174,7 +151,7 @@ def select_halos(logmass_lb, logmass_ub, n_halos_subsamp, delta_z, sigma_z, seed
 
 
 def gen_gal_realization(survey_name, logmass_lb, logmass_ub, seed_seq_child):
-    for i in np.arange(args['n_realizations_per_bin']):
+    for i in np.arange(args.n_realizations_per_bin):
         
         # Numba has no support for using a RandomState instance, so we have to reseed every single function call.
         get_new_seed = lambda: seed_seq_child.spawn(1)[0].generate_state(4)[0]
@@ -202,10 +179,10 @@ def gen_gal_realization(survey_name, logmass_lb, logmass_ub, seed_seq_child):
         ascii.write(output_table, outname, format='ipac', overwrite=True)
 
 gal_realization_args = []
-log_lb_list = np.arange(args['logmass_lower_bound'], args['logmass_upper_bound'] - args['logmass_bin_size'], args['logmass_bin_size'])
+log_lb_list = np.arange(args.logmass_lower_bound, args.logmass_upper_bound - args.logmass_bin_size, args.logmass_bin_size)
 seed_list = seed_seq.spawn(len(log_lb_list))
 for log_lb, seed in zip(log_lb_list, seed_list):
-    gal_realization_args.append((args['survey_name'], log_lb, log_lb + args['logmass_bin_size'], args['n_realizations_per_bin'], seed))
+    gal_realization_args.append((args.survey_name, log_lb, log_lb + args.logmass_bin_size, seed))
 
 with multiprocessing.Pool(N_PROC) as pool:
     pool.starmap(gen_gal_realization, gal_realization_args)

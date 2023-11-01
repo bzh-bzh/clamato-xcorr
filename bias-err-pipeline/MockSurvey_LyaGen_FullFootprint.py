@@ -1,12 +1,13 @@
-import papermill
 import os
-os.chdir('..')
+import sys
+from dotenv import find_dotenv
+sys.path.append(os.path.dirname(find_dotenv()))
 
 import constants
 
 
 if __name__ == '__main__':
-    papermill.execute_notebook('mocksurvey_lyagen.ipynb',
+    papermill.execute_notebook('../mocksurvey_lyagen.ipynb',
                               os.path.join(constants.BIAS_DIR_BASE, 'papermill', 'mocksurvey_lyagen_out.ipynb'),
                               kernel_name='clamato-xcorr',
                               parameters={
