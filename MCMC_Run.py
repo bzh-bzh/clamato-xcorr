@@ -97,7 +97,7 @@ BASE_DIR = Path('/global/homes/b/bzh/clamato-xcorr/data/mcmc')
 PARAM_LIMITS_ALL = {
     'bias_QSO': (0, 10),
     'beta_QSO': (0, 10),
-    'sigma_velo_disp_gauss_QSO': (0, 10),
+    'sigma_velo_disp_gauss_QSO': (0, 20),
     'drp_QSO': (-10, 10),
     'bias_hcd': (-1, 1),
     'beta_hcd': (0, 50),
