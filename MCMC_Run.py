@@ -278,7 +278,8 @@ def log_likelihood(theta):
         vega.params[k] = p
     if not 'beta_QSO' in param_limits.keys():
         vega.params['beta_QSO'] = vega.params['growth_rate'] / vega.params['bias_QSO']
-    return -vega.chi2()
+    # This correctly includes normalization between priors and likelihoods.
+    return vega.log_lik()
 
 def check_bounds(theta):
     for p, bound in zip(theta, param_limits.values()):
