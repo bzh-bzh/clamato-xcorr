@@ -16,6 +16,8 @@ limit_overrides:
     sigma_velo_disp_gauss_QSO:
       - 0
       - 8
+# Fit correlation only along one dimension (the transverse one)
+one_dimension: false
 # MCMC parameters
 # Leave blank to use no suffix
 chain_file_suffix:

@@ -7,6 +7,7 @@ import time
 import signal
 import logging
 import collections
+import copy
 from pathlib import Path
 
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
@@ -18,7 +19,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = '1'
 # os.environ['OMP_PROC_BIND'] = 'true'
 # os.environ['OMP_PLACES'] = 'threads'
 
-from vega import VegaInterface
+from vega import VegaInterface, utils
 from astropy.io import ascii
 import emcee
 import yaml
@@ -143,9 +144,7 @@ if n_proc == -1:
 if 'base_dir' in input_cfg:
     BASE_DIR = Path(input_cfg['base_dir'])
 
-# TODO: this is a totally ugly hack to deal with running non-survey-named .ini files. 
-# Probably want to think of a better way later.
-data_dir = BASE_DIR / survey_name.split('_')[0]
+data_dir = BASE_DIR / survey_name
 vega = VegaInterface(data_dir / f'main_{survey_name}.ini')
 assert not vega.priors
 print(np.sum(vega.data['qsoxlya'].mask))
@@ -158,6 +157,118 @@ if 'fixed' in input_cfg and input_cfg['fixed']:
 # Priors in config.
 if 'priors' in input_cfg.keys() and input_cfg['priors']:
     vega.priors = input_cfg['priors']
+    
+# See if we're working in one dimension. If so, monkey-patch the Vega chi2 function.
+def one_dimensional_chi2(self, params=None, direct_pk=None):
+    """Compute full chi2 for all components.
+
+    Parameters
+    ----------
+    params : dict, optional
+        Computation parameters, by default None
+    direct_pk: 1D array or None, optional
+        If not None, the full Pk (e.g. from CLASS/CAMB) to be used directly, by default None
+
+    Returns
+    -------
+    float
+        chi^2
+    """
+    assert self._has_data
+
+    # Check if blinding is initialized
+    if self._blind is None:
+        self._blind = False
+        for data_obj in self.data.values():
+            if data_obj.blind:
+                self._blind = True
+
+    # Overwrite computation parameters
+    local_params = copy.deepcopy(self.params)
+    if params is not None:
+        for par, val in params.items():
+            local_params[par] = val
+
+    # Enforce blinding
+    if self._blind:
+        for par, val in local_params.items():
+            if par in self._scale_pars:
+                local_params[par] = 1.
+
+    # Go trough each component and compute the chi^2
+    chi2 = 0
+    for name in self.corr_items:
+        try:
+            if direct_pk is None:
+                model_cf = self.models[name].compute(local_params, self.fiducial['pk_full'],
+                                                     self.fiducial['pk_smooth'])
+            else:
+                model_cf = self.models[name].compute_direct(local_params, direct_pk)
+        except utils.VegaBoundsError:
+            self.models[name].PktoXi.cache_pars = None
+            return 1e100
+        
+        data_flat_unmasked = self.data[name].data_vec
+        cov_flat_unmasked = self.data[name].cov_mat
+        
+        # Determine dimensions of data by looking at rp_rt_grid.
+        rp_rt_grid = self.data[name]._corr_item.rp_rt_grid
+        n_parallel = np.sum(rp_rt_grid[1] == rp_rt_grid[1, 0])
+        # assert data_flat_unmasked.size % n_parallel == 0
+        n_transverse = data_flat_unmasked.size // n_parallel
+        
+        # Need to verify that this produces contiguous data.
+        parallel_axis_ind = 1
+        data_unmasked = data_flat_unmasked.reshape((n_transverse, n_parallel))
+        model_unmasked = model_cf.reshape(*data_unmasked.shape)
+        # Convention for numpy masked arrays is that True means invalid data.
+        mask_nonflat = ~self.data[name].mask.reshape(*data_unmasked.shape)
+        cov_unmasked = cov_flat_unmasked.reshape(*data_unmasked.shape, *data_unmasked.shape)
+        
+        # Verified visually that this looks good for both.
+        # test_data_path = os.path.join(data_dir, 'data_reshaped.npy')
+        # if not os.path.exists(test_data_path):
+        #     np.save(test_data_path, data_unmasked)
+        # test_model_path = os.path.join(data_dir, 'model_reshaped.npy')
+        # if not os.path.exists(test_model_path):
+        #     np.save(test_model_path, model_unmasked)
+        
+        data_masked = np.ma.array(data_unmasked, mask=mask_nonflat)
+        model_masked = np.ma.array(model_unmasked, mask=mask_nonflat)
+        # I think this is the right way to do it, but not completely sure.
+        cov_masked = np.ma.array(cov_unmasked)
+        cov_masked[mask_nonflat, ...] = np.ma.masked
+        cov_masked[..., mask_nonflat] = np.ma.masked
+        
+        reduced_data = data_masked.sum(axis=parallel_axis_ind)
+        reduced_model = model_masked.sum(axis=parallel_axis_ind)
+        reduced_cov = cov_masked.sum(axis=(parallel_axis_ind, parallel_axis_ind + 2))
+        # If we mask some transverse bins, then the reduced covariance is going to be a block structure,
+        # where we have some rows/columns that are all masked, followed by a non-masked block.
+        # We assume here that the masked transverse bins extend contiguously from the 0th index.
+        # We fill masked off-diagonal values with 0, and set the diagonal value to 1.
+        # Since the data and model vectors are also masked along those indices, this is OK.
+        for i in range(len(reduced_cov)):
+            if reduced_cov.mask[i, i]:
+                reduced_cov[i, i] = 1
+        reduced_cov = reduced_cov.filled(fill_value=0)
+        reduced_invcov = np.linalg.inv(reduced_cov)
+        
+        if self.monte_carlo:
+            raise NotImplementedError
+        else:
+            diff = reduced_data - reduced_model
+            chi2 += diff.T.dot(reduced_invcov.dot(diff))
+
+    # Add priors
+    for param, prior in self.priors.items():
+        chi2 += self._gaussian_chi2_prior(local_params[param], prior[0], prior[1])
+
+    assert isinstance(chi2, float)
+    return chi2
+
+if input_cfg['one_dimension']:
+    VegaInterface.chi2 = one_dimensional_chi2
 
 # Defined after we load the vega interface so we don't have massive pickling overhead when multiprocessing.
 def log_likelihood(theta):
