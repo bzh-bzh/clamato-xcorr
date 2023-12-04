@@ -83,7 +83,7 @@ class EarlyTermEnsembleSampler(emcee.EnsembleSampler):
             # Changes here.
             if not self.iteration % 100:
                 continue
-            max_tau = np.max(sampler.get_autocorr_time(tol=0))
+            max_tau = np.max(self.get_autocorr_time(tol=0))
             if self.iteration >= 1000 and 1.5 * max_tau < self.iteration // 50:
                 print(f'(n_iter // 50): {self.iteration // 50} is >150% of maximum autocorrelation time: {max_tau:.3}; terminating early.')
                 break
