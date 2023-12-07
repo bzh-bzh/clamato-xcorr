@@ -62,6 +62,9 @@ parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO'
 parser.add_argument('--vega-template-folder', type=Path, default=Path('/global/homes/b/bzh/clamato-xcorr/bias-err-pipeline'))
 parser.add_argument('--xcorr-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'mock' / 'crosscorr')
 parser.add_argument('--output-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'vega' / 'input')
+parser.add_argument('--fit-dispersion', type=bool, default=False)
+parser.add_argument('--configs-only', type=bool, default=False)
+parser.add_argument('--zero-dispersion', type=bool, default=False)
 args = parser.parse_args()
 
 
@@ -84,6 +87,11 @@ survey_param_dict = {
     'CLAMATO': (205, -1.27, 1.5),
     '3DHST': (322, -1, dz_to_dmpch(0.0034 * (1 + zmid)))
 }
+
+if args.zero_dispersion:
+    for k in survey_param_dict.keys():
+        v = survey_param_dict[k]
+        survey_param_dict[k] = (v[0], v[1], 0)
 
 # Read bin edges
 PiBin_fil = os.path.join(constants.XCORR_DIR_BASE, 'bins23_pi_0-30hMpc.txt')
@@ -117,26 +125,28 @@ def gen_vega_config_and_data(xcorr_path,
     suffix = Path(xcorr_path).name.replace('xcorrmock', '').replace('.npy', '')
     assert survey_name in suffix
     
-    # Generate picca-format FITS file.
-    obs_xcorr = np.load(xcorr_path)
-    covar_path = insensitive_glob(os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar', f"covar_{'raw' if use_raw_covar else ''}mock*_"+survey_name+f"_{constants.DATA_VERSION}.npy"))
-    assert len(covar_path) == 1
-    covar = np.load(covar_path[0])
-    assert obs_xcorr.dtype == np.double and covar.dtype == np.double
-    
-    data_table = Table([covar, obs_xcorr.flatten(), RT_GRID.flatten(order='F'), RP_GRID.flatten(order='F'), np.full(obs_xcorr.size, Z_EFF)],
-                      names=['CO', 'DA', 'RT', 'RP', 'Z'])
-    data_hdu = fits.BinTableHDU(data=data_table)
-    data_hdu.header['RPMIN'] = min(RP_VALS)
-    data_hdu.header['RPMAX'] = max(RP_VALS)
-    data_hdu.header['NP'] = len(RP_VALS)
-    data_hdu.header['RTMIN'] = min(RT_VALS)
-    data_hdu.header['RTMAX'] = max(RT_VALS)
-    data_hdu.header['NT'] = len(RT_VALS)
-    data_hdu.header['BLINDING'] = 'none'
-    hdul = fits.HDUList([fits.PrimaryHDU(), data_hdu])
     hdul_path = output_base / f'data{suffix}.fits'
-    hdul.writeto(hdul_path, overwrite=True)
+
+    if not args.configs_only:
+        # Generate picca-format FITS file.
+        obs_xcorr = np.load(xcorr_path)
+        covar_path = insensitive_glob(os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar', f"covar_{'raw' if use_raw_covar else ''}mock*_"+survey_name+f"_{constants.DATA_VERSION}.npy"))
+        assert len(covar_path) == 1
+        covar = np.load(covar_path[0])
+        assert obs_xcorr.dtype == np.double and covar.dtype == np.double
+
+        data_table = Table([covar, obs_xcorr.flatten(), RT_GRID.flatten(order='F'), RP_GRID.flatten(order='F'), np.full(obs_xcorr.size, Z_EFF)],
+                          names=['CO', 'DA', 'RT', 'RP', 'Z'])
+        data_hdu = fits.BinTableHDU(data=data_table)
+        data_hdu.header['RPMIN'] = min(RP_VALS)
+        data_hdu.header['RPMAX'] = max(RP_VALS)
+        data_hdu.header['NP'] = len(RP_VALS)
+        data_hdu.header['RTMIN'] = min(RT_VALS)
+        data_hdu.header['RTMAX'] = max(RT_VALS)
+        data_hdu.header['NT'] = len(RT_VALS)
+        data_hdu.header['BLINDING'] = 'none'
+        hdul = fits.HDUList([fits.PrimaryHDU(), data_hdu])
+        hdul.writeto(hdul_path, overwrite=True)
     
     # Copy template .ini files to output base folder, and change filenames.
     tracer_cfg = configparser.ConfigParser()
@@ -154,9 +164,11 @@ def gen_vega_config_and_data(xcorr_path,
     
     # Input fixed parameters here.
     main_cfg['parameters']['drp_QSO'] = str(survey_param_dict[survey_name][1])
-    main_cfg['parameters']['sigma_velo_disp_gauss_QSO'] = str(survey_param_dict[survey_name][1])
-    #main_cfg['parameters']['beta_QSO'] = main_cfg['parameters']['growth_rate'] / main_cfg['parameters']['bias_QSO']
-    
+    # Factor of two b/c this quantity is half of what we consider z-dispersion.
+    main_cfg['parameters']['sigma_velo_disp_gauss_QSO'] = str(survey_param_dict[survey_name][2] * 2) 
+    if args.fit_dispersion:
+        main_cfg['sample']['sigma_velo_disp_gauss_QSO'] = 'True'
+        
     with open(output_base / f'bias_main{suffix}.ini', 'w') as f:
         main_cfg.write(f)
         

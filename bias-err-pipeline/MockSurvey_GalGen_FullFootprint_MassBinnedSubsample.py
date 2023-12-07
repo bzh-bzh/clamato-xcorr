@@ -29,6 +29,7 @@ parser.add_argument('--n-realizations-per-bin', type=int, default=1000)
 parser.add_argument('--logmass-lower-bound', type=float, default=9)
 parser.add_argument('--logmass-upper-bound', type=float, default=13.4)
 parser.add_argument('--logmass-bin-size', type=float, default=0.1)
+parser.add_argument('--zero-dispersion', type=bool, default=False)
 args = parser.parse_args()
 
 np.random.seed(452813501)
@@ -61,6 +62,11 @@ survey_param_dict = {
     'CLAMATO': (205, -1.27, 1.5),
     '3DHST': (322, -1, dz_to_dmpch(0.0034 * (1 + zmid)))
 }
+
+if args.zero_dispersion:
+    for k in survey_param_dict.keys():
+        v = survey_param_dict[k]
+        survey_param_dict[k] = (v[0], v[1], 0)
 
 def read_fofp_file(path):
     """

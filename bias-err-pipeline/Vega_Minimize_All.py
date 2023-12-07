@@ -58,6 +58,7 @@ def slurm_split(n_obj, *args):
 parser = argparse.ArgumentParser()
 parser.add_argument('--input-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'vega' / 'input')
 parser.add_argument('--output-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'vega' / 'output')
+parser.add_argument('--save-bestfit', type=bool, default=False)
 args = parser.parse_args()
 
 def minimize_galaxy_bias(config_path):    
@@ -66,11 +67,21 @@ def minimize_galaxy_bias(config_path):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         vega.minimize()
-    bestfit_bias = vega.bestfit.params[0].value
-    bestfit_bias_err = vega.bestfit.params[0].error
+
     full_chi2 = vega.chi2()
     reduced_chi2 = vega.chi2() / (vega.data['qsoxlya'].data_size - 1)
-    np.save(args.output_folder / f'bestfit_bias{suffix}.npy', np.array([bestfit_bias, bestfit_bias_err, reduced_chi2]))
+    
+    param_dict = {}
+    for p in vega.bestfit.params:
+        param_dict[p.name] = np.array([p.value, p.error])
+    param_dict['reduced_chisq'] = reduced_chi2
+    
+    np.savez(args.output_folder / f'bestfit{suffix}.npz', **param_dict)
+    
+    if args.save_bestfit:
+        bestfit_model = vega.compute_model(vega.minimizer.values, run_init=False)['qsoxlya']
+        np.save(args.output_folder / f'bestfitmodel{suffix}.npy', bestfit_model)
+        
     
 arguments = sorted(list(glob.glob(str(args.input_folder / 'bias_main*.ini'))))
 (arguments,) = slurm_split(len(arguments), arguments)[0]
