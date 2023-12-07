@@ -1,0 +1,38 @@
+# Survey to cross-correlate
+survey: 'vuds'
+# Mass bin suffix list. Must be non-blank.
+# The Vega config files that this script will load will be BASE_DIR / {survey} / main_{survey}_{suffix}.ini.
+mass_bin_suffixes: ['lowmass', 'medmass', 'highmass']
+# Initial model parameters.
+# The keys for these are the parameters which will be modified in the Vega config.
+# Global prior limits are specified in the Python script itself, to avoid repetition.
+initial:
+    bias_QSO: 2.85
+    # beta_QSO isn't supported for the stacked MCMC script. Instead just fix bias_eta_QSO = 1, and Vega will take care of it.
+    #sigma_velo_disp_gauss_QSO: 2.51189
+    sigma_velo_disp_gauss_QSO: 4.10
+    drp_QSO: -2.26
+priors:
+    #Center from VUDS redshift accuracy estimates, with sigma set to 30% arbitrarily.
+    sigma_velo_disp_gauss_QSO:
+       - 3.842
+       - 1.152
+fixed:
+    bias_eta_QSO: 1
+    bias_hcd: 0
+    beta_hcd: 0
+limit_overrides:
+    sigma_velo_disp_gauss_QSO:
+      - 0
+      - 8
+# Fit correlation only along one dimension (the transverse one)
+one_dimension: false
+# MCMC parameters
+# Leave blank to use no suffix
+chain_file_suffix:
+# Divide by 2 to get number of (logical) cores used.
+n_walkers: 128
+n_step: 20000
+rng_seed: 3673938111
+# Set to -1 to use maximum number of CPUs.
+n_processes: 128
