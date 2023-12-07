@@ -1,0 +1,29 @@
+# Survey to cross-correlate
+survey: '3dhst'
+# Initial model parameters.
+# The keys for these are the parameters which will be modified in the Vega config.
+# Global prior limits are specified in the Python script itself, to avoid repetition.
+initial:
+    bias_QSO: 0.8
+    # This can be blank; if so, the script will set it to bias_QSO**-1.
+    beta_QSO:
+fixed:
+    sigma_velo_disp_gauss_QSO: 27.20
+    drp_QSO: -3.90
+    bias_hcd: 0
+    beta_hcd: 0
+limit_overrides:
+    bias_QSO:
+      - 0
+      - 15
+# Fit correlation only along one dimension (the transverse one)
+one_dimension: true
+# MCMC parameters
+# Leave blank to use no suffix
+chain_file_suffix: 'oned'
+# Divide by 2 to get number of (logical) cores used.
+n_walkers: 128
+n_step: 20000
+rng_seed: 3673938111
+# Set to -1 to use maximum number of CPUs.
+n_processes: 128
