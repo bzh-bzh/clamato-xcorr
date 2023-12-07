@@ -55,16 +55,25 @@ if __name__ == '__main__':
     survey_name = input_cfg['survey']
     
     assert input_cfg['mass_bin_suffixes']
+    if input_cfg['one_dimension']:
+        assert 'sigma_velo_disp_gauss_QSO' in input_cfg['fixed']
+        assert 'sigma_velo_disp_gauss_QSO' not in input_cfg['initial']
+        assert 'drp_QSO' in input_cfg['fixed']
+        assert 'drp_QSO' not in input_cfg['initial']
     
     # We assume the parameter vector theta is formed from the values of an OrderedDict
     # with keys [bias_QSO_{suffix[0]}, bias_QSO_{suffix[1]}, ..., sigma_velo_disp_gauss_QSO, drp_QSO].
     def set_params_all_interfaces(theta, interface_list):
-        sigma_velo_disp_gauss_QSO, drp_QSO = theta[-2:]
-        bias_list = theta[:-2]
+        if input_cfg['one_dimension']:
+            bias_list = theta
+        else:
+            sigma_velo_disp_gauss_QSO, drp_QSO = theta[-2:]
+            bias_list = theta[:-2]
         assert len(bias_list) == len(interface_list)
         for bias, interface in zip(bias_list, interface_list):
-            interface.params['sigma_velo_disp_gauss_QSO'] = sigma_velo_disp_gauss_QSO
-            interface.params['drp_QSO'] = drp_QSO
+            if not input_cfg['one_dimension']:
+                interface.params['sigma_velo_disp_gauss_QSO'] = sigma_velo_disp_gauss_QSO
+                interface.params['drp_QSO'] = drp_QSO
             interface.params['bias_QSO'] = bias
     
     # Initialize best-guess vector and parameter limits.
@@ -84,8 +93,9 @@ if __name__ == '__main__':
     for _ in range(len(input_cfg['mass_bin_suffixes'])):
         insert_theta_limits('bias_QSO')
     # Now do dispersion, then offset.
-    insert_theta_limits('sigma_velo_disp_gauss_QSO')
-    insert_theta_limits('drp_QSO')
+    if not input_cfg['one_dimension']:
+        insert_theta_limits('sigma_velo_disp_gauss_QSO')
+        insert_theta_limits('drp_QSO')
 
     n_dim = len(init_theta)
     n_walkers = input_cfg['n_walkers']
@@ -114,8 +124,8 @@ if __name__ == '__main__':
                 vega.params[k] = p
         # Priors in config.
         # Only set priors for one of the interfaces, since these parameters are shared.
-        if 'priors' in input_cfg.keys() and input_cfg['priors'] and i == 0:
-            assert set(input_cfg['priors'].keys()) == set(['sigma_velo_disp_gauss_QSO', 'drp_QSO'])
+        if 'priors' in input_cfg.keys() and input_cfg['priors'] and i == 0 and (not input_cfg['one_dimension']):
+            assert set(input_cfg['priors'].keys()) <= set(['sigma_velo_disp_gauss_QSO', 'drp_QSO'])
             vega.priors = input_cfg['priors']
 
         # See if we're working in one dimension. If so, monkey-patch the Vega log-likelihood function.
