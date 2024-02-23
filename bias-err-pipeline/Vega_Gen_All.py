@@ -56,9 +56,10 @@ def slurm_split(n_obj, *args):
         return split_args, offset
     else:
         return args, 0
+    
+survey_name_choices = ['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST'])
 parser.add_argument('--vega-template-folder', type=Path, default=Path('/global/homes/b/bzh/clamato-xcorr/bias-err-pipeline'))
 parser.add_argument('--xcorr-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'mock' / 'crosscorr')
 parser.add_argument('--output-folder', type=Path, default=Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'vega' / 'input')
@@ -89,6 +90,7 @@ survey_param_dict = {
 }
 
 if args.zero_dispersion:
+    print('Warning: setting survey dispersion Vega parameter to 0, instead of true values.')
     for k in survey_param_dict.keys():
         v = survey_param_dict[k]
         survey_param_dict[k] = (v[0], v[1], 0)
@@ -109,7 +111,6 @@ RT_GRID, RP_GRID = np.meshgrid(RT_VALS, RP_VALS)
 Z_EFF = 2.3
 N_PROC = multiprocessing.cpu_count()
 
-survey_name = args.survey_name
 output_base = args.output_folder
 VEGA_TEMPLATE_DIR = args.vega_template_folder
 
@@ -123,8 +124,14 @@ def gen_vega_config_and_data(xcorr_path,
                              use_raw_covar=True):
     
     suffix = Path(xcorr_path).name.replace('xcorrmock', '').replace('.npy', '')
-    assert survey_name in suffix
     
+    survey_name = ''
+    for survey in survey_name_choices:
+        if survey in suffix:
+            survey_name = survey
+            break
+    assert survey_name
+        
     hdul_path = output_base / f'data{suffix}.fits'
 
     if not args.configs_only:
