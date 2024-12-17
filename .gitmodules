@@ -4,3 +4,6 @@
 [submodule "vega"]
 	path = vega
 	url = https://github.com/andreicuceu/vega.git
+[submodule "illustris_python"]
+	path = illustris_python
+	url = https://github.com/illustristng/illustris_python.git
