@@ -12,6 +12,10 @@ initial:
 fixed:
     bias_hcd: 0
     beta_hcd: 0
+limit_overrides:
+    sigma_velo_disp_gauss_QSO:
+      - 0
+      - 12
 # Fit correlation only along one dimension (the transverse one)
 one_dimension: false
 # MCMC parameters
