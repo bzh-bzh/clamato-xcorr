@@ -23,7 +23,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 parser = argparse.ArgumentParser()
-parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST'])
+parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST', 'combined'])
 parser.add_argument('--output-folder', type=pathlib.Path, default=pathlib.Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'mock' / 'gal')
 parser.add_argument('--n-realizations-per-bin', type=int, default=1000)
 parser.add_argument('--logmass-lower-bound', type=float, default=9)
@@ -56,14 +56,17 @@ dkms_to_dmpch = lambda v: ((v * u.km / u.s) / cosmo.H(zmid)).value * cosmo.h * (
 
 # Tuple of (# galaxies, deltaz, sigz).
 survey_param_dict = {
-    'MOSDEF': (195, -1.12, 1.5),
-    'zDeep': (759, -3.04, 2),
-    'VUDS': (469, -2.65, dkms_to_dmpch(200)),
-    'CLAMATO': (205, -1.27, 1.5),
-    '3DHST': (322, -1, dz_to_dmpch(0.0034 * (1 + zmid)))
+    'MOSDEF': (195, -0.82, 1.28),
+    'zDeep': (759, -1.84, 2.44),
+    'VUDS': (469, -2.15, 1.90),
+    'CLAMATO': (205, -2.17, 1.63),
+    '3DHST': (322, -3.43, 13.53),
+    # calculated in stacked_observations.ipynb; gaussian refit to bootstrapped distributions of z-params for combined unique sample.
+    'combined': (1189, -1.8554295523073825, 2.1197849083194007)
 }
 
 if args.zero_dispersion:
+    raise RuntimeError
     for k in survey_param_dict.keys():
         v = survey_param_dict[k]
         survey_param_dict[k] = (v[0], v[1], 0)
@@ -105,7 +108,7 @@ def read_fofp_file(path):
     # v_pot_e = np.fromfile(fof_file, dtype="f4", count=num_groups)
     
     # Apply RSD.
-    z_rsd_offset = halo_cat.VZ * ((1 + zmid) / cosmo.H(zmid) * littleh).value
+    z_rsd_offset = ((halo_cat.VZ.to_numpy() * u.km / u.s) * ((1 + zmid) / cosmo.H(zmid))).to(u.Mpc).value * littleh
     halo_cat.Z += z_rsd_offset
     
     # In Mpc/h
