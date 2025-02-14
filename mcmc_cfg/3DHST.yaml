@@ -7,14 +7,14 @@ initial:
     bias_QSO: 0.8
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
-    sigma_velo_disp_gauss_QSO: 19.58
+    sigma_velo_disp_gauss_QSO: 20.43
     drp_QSO: -1.2
 # Assumed Gaussian, with values [mean, sigma].
 priors:
     # Center from 3DHST redshift accuracy estimates, with sigma set to 30% arbitrarily.
     sigma_velo_disp_gauss_QSO:
-       - 19.58
-       - 5.88
+       - 20.43
+       - 6.13
 fixed:
     bias_hcd: 0
     beta_hcd: 0

@@ -8,13 +8,13 @@ initial:
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
     #sigma_velo_disp_gauss_QSO: 2.51189
-    sigma_velo_disp_gauss_QSO: 3.842
+    sigma_velo_disp_gauss_QSO: 3.507
     drp_QSO: -1.8
 priors:
     #Center from VUDS redshift accuracy estimates, with sigma set to 30% arbitrarily.
     sigma_velo_disp_gauss_QSO:
-       - 3.842
-       - 1.152
+       - 3.507
+       - 1.052
 fixed:
     bias_hcd: 0
     beta_hcd: 0

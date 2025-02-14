@@ -11,8 +11,10 @@ SIM_DIR_BASE = '/global/homes/b/bzh/projectdir/bzh/BolshoiP/full-halo-cat'
 TNG_DIR_BASE = '/global/homes/b/bzh/clamato-xcorr/data/TNG100-1'
 FIG_DIR_BASE = '/global/homes/b/bzh/clamato-xcorr/figures'
 
-DATA_VERSION = 'v4'
+DATA_VERSION = 'v8'
 
 COSMOLOGY = Planck15
 
 STACKED_BIN_TITLES = ['lowmass', 'medmass', 'highmass']
+
+SIGMA_Z_CONVFAC = 2**0.5
