@@ -17,8 +17,8 @@ initial:
 #        - -1.91
 #        - 0.31
 fixed:
-    sigma_velo_disp_gauss_QSO: 3.3
-    drp_QSO: -1.91
+    sigma_velo_disp_gauss_QSO: 2.76
+    drp_QSO: -2.09
     bias_eta_QSO: 1
     bias_hcd: 0
     beta_hcd: 0

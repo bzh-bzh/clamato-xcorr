@@ -8,8 +8,8 @@ initial:
     # This can be blank; if so, the script will set it to bias_QSO**-1.
     beta_QSO:
 fixed:
-    sigma_velo_disp_gauss_QSO: 4.54
-    drp_QSO: -2.26
+    sigma_velo_disp_gauss_QSO: 5.48
+    drp_QSO: -1.76
     bias_hcd: 0
     beta_hcd: 0
 # Fit correlation only along one dimension (the transverse one)

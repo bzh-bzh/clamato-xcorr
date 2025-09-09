@@ -7,3 +7,6 @@
 [submodule "illustris_python"]
 	path = illustris_python
 	url = https://github.com/illustristng/illustris_python.git
+[submodule "SHMR_COSMOS2020"]
+	path = SHMR_COSMOS2020
+	url = git@github.com:mShuntov/SHMR_COSMOS2020.git

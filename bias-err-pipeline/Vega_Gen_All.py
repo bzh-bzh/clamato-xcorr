@@ -57,7 +57,7 @@ def slurm_split(n_obj, *args):
     else:
         return args, 0
     
-survey_name_choices = ['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST']
+survey_name_choices = ['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST', 'combined']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--vega-template-folder', type=Path, default=Path('/global/homes/b/bzh/clamato-xcorr/bias-err-pipeline'))
@@ -86,10 +86,13 @@ survey_param_dict = {
     'zDeep': (759, -3.04, 2),
     'VUDS': (469, -2.65, dkms_to_dmpch(200)),
     'CLAMATO': (205, -1.27, 1.5),
-    '3DHST': (322, -1, dz_to_dmpch(0.0034 * (1 + zmid)))
+    '3DHST': (322, -1, dz_to_dmpch(0.0034 * (1 + zmid))),
+    # calculated in stacked_observations.ipynb; gaussian refit to bootstrapped distributions of z-params for combined unique sample.
+    'combined': (1189, -1.8080951816576563, 2.1193420529690887)
 }
 
 if args.zero_dispersion:
+    raise RuntimeError
     print('Warning: setting survey dispersion Vega parameter to 0, instead of true values.')
     for k in survey_param_dict.keys():
         v = survey_param_dict[k]
@@ -137,7 +140,11 @@ def gen_vega_config_and_data(xcorr_path,
     if not args.configs_only:
         # Generate picca-format FITS file.
         obs_xcorr = np.load(xcorr_path)
-        covar_path = insensitive_glob(os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar', f"covar_{'raw' if use_raw_covar else ''}mock*_"+survey_name+f"_{constants.DATA_VERSION}.npy"))
+        if survey_name == 'combined':
+            covar_survey_name = 'all'
+        else:
+            covar_survey_name = survey_name
+        covar_path = insensitive_glob(os.path.join(constants.XCORR_DIR_BASE, 'mock', 'covar', f"covar_{'raw' if use_raw_covar else ''}mock*_"+covar_survey_name+f"_{constants.DATA_VERSION}.npy"))
         assert len(covar_path) == 1
         covar = np.load(covar_path[0])
         assert obs_xcorr.dtype == np.double and covar.dtype == np.double

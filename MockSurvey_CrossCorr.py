@@ -1,4 +1,4 @@
-n""" 
+""" 
 Calculate Ly-alpha/galaxy cross-correlation for an ensemble of abs x galaxy realizations generated 
 in May 2019. 
 
@@ -70,7 +70,7 @@ def gen_crosscorr(args):
     ### Read in galaxies 
     # We use the catalog created with Create_GalzMocks.IPYNB
     galsuffix = '{:03d}'.format(ivol+igal*N_VOL)
-    galfil = os.path.join(mockdir, 'gal', 'cat_galmock_nonuniq_'+galsuffix+'.dat')
+    galfil = os.path.join(mockdir, 'gal', 'cat_galmock_nonuniq_'+galsuffix+f'_{constants.DATA_VERSION}.dat')
 
     gal = ascii.read(galfil, format='ipac')
     #print(gal.columns)

@@ -2,7 +2,7 @@
 #SBATCH -C cpu
 #SBATCH -q regular
 #SBATCH --nodes=5
-#SBATCH -t 1:30:00
+#SBATCH -t 2:00:00
 #SBATCH -o mcmc_run.out
 #SBATCH -e mcmc_run.err
 #SBATCH --open-mode=append

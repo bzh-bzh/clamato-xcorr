@@ -7,16 +7,16 @@ mass_bin_suffixes: ['lowmass', 'medmass', 'highmass']
 # The keys for these are the parameters which will be modified in the Vega config.
 # Global prior limits are specified in the Python script itself, to avoid repetition.
 initial:
-    bias_QSO: 2.85
+    bias_QSO: 2.52
     # beta_QSO isn't supported for the stacked MCMC script. Instead just fix bias_eta_QSO = 1, and Vega will take care of it.
     #sigma_velo_disp_gauss_QSO: 2.51189
-    sigma_velo_disp_gauss_QSO: 4.10
-    drp_QSO: -2.26
+    sigma_velo_disp_gauss_QSO: 3.78
+    drp_QSO: -2.11
 priors:
     #Center from VUDS redshift accuracy estimates, with sigma set to 30% arbitrarily.
     sigma_velo_disp_gauss_QSO:
-       - 3.842
-       - 1.152
+       - 3.507
+       - 1.052
 fixed:
     bias_eta_QSO: 1
     bias_hcd: 0

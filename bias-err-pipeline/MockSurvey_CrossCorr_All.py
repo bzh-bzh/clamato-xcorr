@@ -84,6 +84,7 @@ PiEdges  = PiEdges/(len(PiEdges)*[cosmo.h])
 SigEdges = SigEdges/(len(SigEdges)*[cosmo.h])
 
 N_PROC = multiprocessing.cpu_count()
+print(f'Running on {N_PROC} CPUs.')
 
 lyapix = xcorr.lyapix(args.lya_file, cosmo=cosmo)
 npix = lyapix.npix

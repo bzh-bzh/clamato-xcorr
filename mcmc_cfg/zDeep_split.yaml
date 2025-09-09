@@ -7,9 +7,9 @@ mass_bin_suffixes: ['lowmass', 'medmass', 'highmass']
 # The keys for these are the parameters which will be modified in the Vega config.
 # Global prior limits are specified in the Python script itself, to avoid repetition.
 initial:
-    bias_QSO: 3.67
-    sigma_velo_disp_gauss_QSO: 4.54
-    drp_QSO: -2.26
+    bias_QSO: 3.05
+    sigma_velo_disp_gauss_QSO: 4.92
+    drp_QSO: -1.76
 # priors:
 #     sigma_velo_disp_gauss_QSO:
 #        - 4.54

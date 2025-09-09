@@ -23,10 +23,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 parser = argparse.ArgumentParser()
-parser.add_argument('survey_name', choices=['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST', 'combined'])
+parser.add_argument('survey_name', choices=['combined'])#['MOSDEF', 'zDeep', 'VUDS', 'CLAMATO', '3DHST', 'combined'])
 parser.add_argument('--output-folder', type=pathlib.Path, default=pathlib.Path(constants.BIAS_DIR_BASE) / 'xcorr' / 'mock' / 'gal')
 parser.add_argument('--n-realizations-per-bin', type=int, default=1000)
-parser.add_argument('--logmass-lower-bound', type=float, default=9)
+parser.add_argument('--logmass-lower-bound', type=float, default=8)
 parser.add_argument('--logmass-upper-bound', type=float, default=13.4)
 parser.add_argument('--logmass-bin-size', type=float, default=0.1)
 parser.add_argument('--zero-dispersion', type=bool, default=False)
@@ -37,7 +37,7 @@ outdir = args.output_folder
 os.makedirs(outdir, exist_ok=True)
 
 # Multiprocessing parameters.
-N_PROC = 64
+N_PROC = multiprocessing.cpu_count()
 
 # Initialize the seed sequence, which is used to generate good (very different PRNG streams) sub-seeds.
 seed_seq = np.random.SeedSequence(entropy=317487248082105438040721345508662758105)
@@ -62,7 +62,7 @@ survey_param_dict = {
     'CLAMATO': (205, -2.17, 1.63),
     '3DHST': (322, -3.43, 13.53),
     # calculated in stacked_observations.ipynb; gaussian refit to bootstrapped distributions of z-params for combined unique sample.
-    'combined': (1189, -1.8554295523073825, 2.1197849083194007)
+    'combined': (1189, -1.927440948211736, 3.191135333131138)
 }
 
 if args.zero_dispersion:

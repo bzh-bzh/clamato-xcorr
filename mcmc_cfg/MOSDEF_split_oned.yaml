@@ -10,8 +10,8 @@ initial:
     bias_QSO: 2.85
     # beta_QSO isn't supported for the stacked MCMC script. Instead just fix bias_eta_QSO = 1, and Vega will take care of it.
 fixed:
-    sigma_velo_disp_gauss_QSO: 2.76
-    drp_QSO: -0.80
+    sigma_velo_disp_gauss_QSO: 2.53
+    drp_QSO: -0.76
     bias_eta_QSO: 1
     bias_hcd: 0
     beta_hcd: 0
