@@ -10,3 +10,6 @@
 [submodule "SHMR_COSMOS2020"]
 	path = SHMR_COSMOS2020
 	url = git@github.com:mShuntov/SHMR_COSMOS2020.git
+[submodule "cosmos2020-readcat"]
+	path = cosmos2020-readcat
+	url = git@github.com:cosmic-dawn/cosmos2020-readcat.git
