@@ -13,3 +13,6 @@
 [submodule "cosmos2020-readcat"]
 	path = cosmos2020-readcat
 	url = git@github.com:cosmic-dawn/cosmos2020-readcat.git
+[submodule "CosmicWeb_COSMOS2020_v1"]
+	path = CosmicWeb_COSMOS2020_v1
+	url = git@github.com:momo-tarohu/CosmicWeb_COSMOS2020_v1.git
